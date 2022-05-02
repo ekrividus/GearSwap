@@ -1,5 +1,12 @@
 *
+!.gitignore
+!README.md
 
-!/data/default.lua
-!/data/default_gear.lua
-!/data/gs_*.lua
+!data/
+data/*
+!data/default.lua
+!data/default_gear.lua
+!data/gs_*.lua
+
+!data/YourCharacterName/
+!data/YourCharacterName/*
