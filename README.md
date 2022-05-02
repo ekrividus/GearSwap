@@ -76,4 +76,10 @@ will tell gearswap that you are going to be magic bursting and to use sets from 
 gs c notbursting
 Will tell gearswap that you are no longer magic bursting and to stop using sets including MB. 
 
-The previous 2 commands pair well in macros or with autoMB when the gearswap option is toggled on.
+The previous 2 commands pair well in macros or with autoMB when the gearswap option is toggled on.  
+```
+/con gs c bursting
+/ma "Thunder V" <stnpc>
+/wait 6
+/con gs c notbursting
+```  
