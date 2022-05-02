@@ -1,0 +1,2 @@
+# GearSwap
+ FFXI gearswap files
