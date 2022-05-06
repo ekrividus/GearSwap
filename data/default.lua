@@ -39,6 +39,9 @@ pet_action_max_time = 2
 
 no_prerender = true
 
+-- Newly added variables that might be missing in modes object, but hopefully aren't
+modes.keep_tp.amount = modes.keep_tp.amount or 500
+
 function gear_up()
     local time = os.clock()
     if (time > (pet_action_start_time + pet_action_max_time)) then
@@ -109,7 +112,7 @@ function gear_up()
     end
 
 -- Add weapons to set
-    if (weapons_changed or (modes.keep_tp.active == false and player.tp < modes.keep_tp.amount)) then
+    if (weapons_changed or (modes.keep_tp.active == false and modes.keep_tp.amount and player.tp < modes.keep_tp.amount)) then
         if (sets.Weapons[modes.weapons.set]) then
             sets_list = sets_list..'Weapon-'..tostring(modes.weapons.set).." "
             set = set_combine(set, sets.Weapons[modes.weapons.set])
@@ -190,9 +193,17 @@ function gear_up()
         set = set_combine(set, sets.Player.Idle.Town)
     end
 
+-- We're AFACing so make sure we aren't taking off BP gear
+    if buffactive["Astral Conduit"] then
+        sets_list = "Astral Flow + Astral Conduit Only"
+        set = {}
+    end
+
     if (modes.verbose.active) then
         windower.add_to_chat(207, sets_list)
     end
+
+
     equip(set)
     return set
 end
@@ -355,7 +366,7 @@ function precast(spell)
         if spell.type == 'BloodPactWard' or spell.type == 'BloodPactRage' then
             set = set_combine(set, sets.BloodPact.Precast)
             pet_action = true
-            if buffactive["Astral Conduit"] then
+            if buffactive["Astral Conduit"] or buffactive["Apogee"] then
                 if spell.type == 'BloodPactWard' then
                     set = set_combine(set, sets.BloodPact.Ward)
                     if blood_pacts_physical:contains(spell.name) then
@@ -480,7 +491,7 @@ function precast(spell)
     end
 
     -- TODO: Make this smarter to allow insturment swaps or ammo swaps but not both
-    if (modes.keep_tp.active and player.tp >= modes.keep_tp.amount) then
+    if (modes.keep_tp.active and modes.keep_tp.amount and player.tp >= modes.keep_tp.amount) then
         set.main = nil
         set.sub = nil
     end
@@ -527,68 +538,119 @@ function midcast(spell)
 
     if sets[short_type] then
         set = set_combine(set, sets[short_type])
+        if (spell.target.type == "SELF") then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..short_type.."'] - ON")
+            end
+            set = set_combine(set, sets[short_type].Self)
+        end
     end
     if sets[spell.type] then 
         set = set_combine(set, sets[spell.type])
+        if (spell.target.type == "SELF") then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..spell.type.."'] - ON")
+            end
+            set = set_combine(set, sets[spell.type].Self)
+        end
     end
+
+    if (short_skill == "Blue" and sets.Blue) then
+        local blue_set = "None"
+        if (blue_breath:contains(spell.name)) then
+            set = set_combine(set, sets.Blue.Breath)
+            blue_set = "Breath"
+        elseif (blue_healing:contains(spell.name)) then
+            set = set_combine(set, sets.Blue.Healing)
+            blue_set = "Healing"
+        elseif (blue_enhancing:contains(spell.name)) then
+            set = set_combine(set, sets.Blue.Enhancing)
+            blue_set = "Enhancing"
+        elseif (blue_enfeebling:contains(spell.name)) then
+            set = set_combine(set, sets.Blue.Enfeebling)
+            blue_set = "Enfeebling"
+        elseif (blue_magical:contains(spell.name)) then
+            set = set_combine(set, sets.Blue.Magical)
+            blue_set = "Magical"
+        elseif (blue_physical:contains(spell.name)) then
+            set = set_combine(set, sets.Blue.Physical)
+            blue_set = "Physical"
+        end
+        if (modes.verbose.active == true) then
+            windower.add_to_chat(207, "Blue Set Engaged: "..blue_set)
+        end
+    elseif (short_skill == "Ninjutsu" and sets.Ninjutsu) then
+        if (ninjutsu_enhancing:contains(short_spell)) then
+            set = set_combine(set, sets.Ninjutsu.Enhancing)
+        elseif (ninjutsu_enfeebling:contains(short_spell)) then
+            set = set_combine(set, sets.Ninjutsu.Enfeebling)
+        elseif (ninjutsu_elemental:contains(short_spell)) then
+            set = set_combine(set, sets.Ninjutsu.Elemental)
+        end
+    end
+
     if short_skill and sets[short_skill] then 
         set = set_combine(set, sets[short_skill])
-        if (short_skill == "Blue") then
-            local blue_set = "None"
-            if (blue_breath:contains(spell.name)) then
-                set = set_combine(set, sets.Blue.Breath)
-                blue_set = "Breath"
-            elseif (blue_healing:contains(spell.name)) then
-                set = set_combine(set, sets.Blue.Healing)
-                blue_set = "Healing"
-            elseif (blue_enhancing:contains(spell.name)) then
-                set = set_combine(set, sets.Blue.Enhancing)
-                blue_set = "Enhancing"
-            elseif (blue_enfeebling:contains(spell.name)) then
-                set = set_combine(set, sets.Blue.Enfeebling)
-                blue_set = "Enfeebling"
-            elseif (blue_magical:contains(spell.name)) then
-                set = set_combine(set, sets.Blue.Magical)
-                blue_set = "Magical"
-            elseif (blue_physical:contains(spell.name)) then
-                set = set_combine(set, sets.Blue.Physical)
-                blue_set = "Physical"
+        if (spell.target.type == "SELF") then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."'] - ON")
             end
-            if (modes.verbose.active == true) then
-                windower.add_to_chat(207, "Blue Set Engaged: "..blue_set)
-            end
-        elseif (short_skill == "Ninjutsu") then
-            if (ninjutsu_enhancing:contains(short_spell)) then
-                set = set_combine(set, sets.Ninjutsu.Enhancing)
-            elseif (ninjutsu_enfeebling:contains(short_spell)) then
-                set = set_combine(set, sets.Ninjutsu.Enfeebling)
-            elseif (ninjutsu_elemental:contains(short_spell)) then
-                set = set_combine(set, sets.Ninjutsu.Elemental)
-            end
+            set = set_combine(set, sets[short_skill].Self)
         end
     end
 
     if short_skill and sets[short_skill] and sets[short_skill][short_spell] then
         set = set_combine(set, sets[short_skill][short_spell])
+        if (spell.target.type == "SELF") then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."']['"..short_spell.."'] - ON")
+            end
+            set = set_combine(set, sets[short_skill][short_spell].Self)
+        end
     end
     if short_skill and sets[short_skill] and sets[short_skill][spell.name] then
         set = set_combine(set, sets[short_skill][spell.name])
+        if (spell.target.type == "SELF") then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."']['"..spell.name.."'] - ON")
+            end
+            set = set_combine(set, sets[short_skill][spell.name].Self)
+        end
     end
     if sets[short_spell] then 
         set = set_combine(set, sets[short_spell])
+        if (spell.target.type == "SELF") then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..short_spell.."'] - ON")
+            end
+            set = set_combine(set, sets[short_spell].Self)
+        end
     end
     if sets[spell.name] then
         set = set_combine(set, sets[spell.name])
+        if (spell.target.type == "SELF") then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..spell.name.."'] - ON")
+            end
+            set = set_combine(set, sets[spell.name].Self)
+        end
     end
+
+    if (barspells and (barspells:contains(short_spell) or barspells:contains(spell.name)) or (short_spell:slice(1,3)=="Bar" and sets.Enhancing)) then
+        set = set_combine(set, sets.Enhancing.Barspell)
+    end
+
+    if (enspells and (enspells:contains(short_spell) or enspells:contains(spell.name))) then
+        set = set_combine(set, sets.Enhancing.Enspell)
+    end
+    
     if (modes.bursting.active) then
         set = set_combine(set, sets.MB, sets.Magic.MB)
         if (sets[short_skill]) then
             set = set_combine(set, sets[short_skill].MB)
         end
     end
-    if (short_spell:slice(1,3)=="Bar" and sets.Enhancing) then
-        set = set_combine(set, sets.Enhancing.Barspell)
-    end
+
     if (modes.interrupt.type ~= 'Off') then
         set = set_combine(set, sets.SI, sets.SI[modes.interrupt.type])
     end
@@ -616,15 +678,15 @@ function midcast(spell)
         end
     end            
 
-    if (modes.keep_tp.active and player.tp >= modes.keep_tp.amount) then
+    if (modes.keep_tp.active and modes.keep_tp.amount and player.tp >= modes.keep_tp.amount) then
         set.main = nil
         set.sub = nil
     end
 
     -- Enmity adjustment gear if desired
-    if (enmity_generators:contains(short_spell) and modes.enmity.type == "Up" and sets.Enmity) then
+    if (enmity_generators and enmity_generators:contains(short_spell) and modes.enmity.type == "Up" and sets.Enmity) then
         set = set_combine(set, sets.Enmity.Up)
-    elseif (enmity_generators:contains(short_spell) and modes.enmity.type == "Dwn" and sets.Enmity) then
+    elseif (enmity_generators and enmity_generators:contains(short_spell) and modes.enmity.type == "Dwn" and sets.Enmity) then
         set = set_combine(set, sets.Enmity.Down)
     end
 

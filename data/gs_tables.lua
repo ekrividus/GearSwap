@@ -403,3 +403,17 @@ blue_enfeebling = T{
     "Jettatura", "Feather Tickle", "Temporarly Shift", "Actinic Burst", "Reaving Wind", "Mortal Ray", "Absolute Terror",
     "Blistering Roar",
 }
+
+barspells = T{
+    "Barfire", "Barfira",
+    "Barblizzard", "Barblizzara",
+    "Baraero", "Baraera",
+    "Barstone", "Barstonra",
+    "Barthunder", "Barthundra",
+    "Barwater", "Barwatera",
+}
+
+enspells = T{
+    "Enthunder", "Enstone", "Enaero", "Enblizzard", "Enfire", "Enwater", "Enlight", "Endark", 
+    "Enthunder II", "Enstone II", "Enaero II", "Enblizzard II", "Enfire II", "Enwater II", "Enlight II","Endark II",
+}
