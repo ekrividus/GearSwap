@@ -19,8 +19,11 @@ modes = {}
 just_zoned = false
 zone_delay = 5
 
+last_update = 0
+update_freq = 0.25
+
 last_stance_check_time = 0
-stance_check_delay = 2
+stance_check_delay = 3
 
 last_maneuver_check_time = 0
 maneuver_check_delay = 3
@@ -231,7 +234,6 @@ function get_sets()
     set_key_binds()
     load_settings()
     init_gui()
-    coroutine.schedule(gear_up, 5)
 
     if (macrobook ~= 0) then
         send_command('wait 6; input /macro book '..macrobook)
@@ -256,7 +258,6 @@ function pretarget(spell)
     
     local set = T{}
     if spell.type == 'BloodPactWard' or spell.type == 'BloodPactRage' then
-        if (pet_action) then return end
         set = set_combine(set, sets.BloodPact.Precast)
         pet_action = true
         if buffactive["Astral Conduit"] then
@@ -846,10 +847,10 @@ function buff_change(name, gain, buff_details)
                 maneuvers_to_apply:clear()
             end
             if (maneuvers_to_apply and maneuvers_to_apply:length() > 0) then
-                for k, d in pairs(maneuvers_to_apply) do
+                for k, v in pairs(maneuvers_to_apply) do
                     if (k=="data") then
-                        for k2, v in pairs(d) do
-                            if (v == name) then
+                        for k2, v2 in pairs(v) do
+                            if (v2 == name) then
                                 maneuvers_to_apply:remove(k2)
                                 break
                             end
@@ -869,83 +870,93 @@ function buff_change(name, gain, buff_details)
 end
 
 ----[[[[ Prerender, every frame, function ]]]]----
-windower.register_event('prerender', function(...)
-    update_gui()
+windower.raw_register_event('prerender', function(...)
+    --update_gui()
     local time = os.clock()
+    if (just_zoned) then return end
+    if (time < last_update + update_freq) then return end
+    last_update = time
 
     -- If we had a stance set and it has worn off lets get it back up
-    if (not is_disabled() and not cities:contains(world.area) and time > last_stance_check_time + stance_check_delay) then
-        last_stance_check_time = time
-        if (modes.stance) then
-            if (stances:with('name', modes.stance.name)) then
-                local d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name).recast_id]
-                if (not buffactive[modes.stance.name] and d and d == 0) then
-                    apply_stance(modes.stance)
+    if (time > last_stance_check_time + stance_check_delay) then
+        if (not is_disabled() and not cities:contains(world.area)) then
+            last_stance_check_time = time
+            if (modes.stance) then
+                if (stances:with('name', modes.stance.name)) then
+                    local d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name).recast_id]
+                    if (not buffactive[modes.stance.name] and d and d == 0) then
+                        apply_stance(modes.stance)
+                    end
                 end
             end
         end
     end
-
-    if (just_zoned) then return end
 
     -- If we have 1 or more maneuvers to apply then go ahead and apply one
-    if (not is_disabled() and time > last_maneuver_check_time + maneuver_check_delay) then
-        last_maneuver_check_time = time
-        if (buffactive['Overload']) then
-            return
-        end
+    if (time > last_maneuver_check_time + maneuver_check_delay) then
+        if (not is_disabled()) then
+            last_maneuver_check_time = time
+            if (buffactive['Overload']) then
+                return
+            end
 
-        if (pet_engage_commands:contains(player.main_job) and modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
-            send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
-        end
-    
-        if (modes.pet.auto_maneuvers and maneuvers_to_apply and maneuvers_to_apply:length() > 0) then
-            --windower.add_to_chat(17, "Maneuvers: "..tostring(maneuvers:length()))
-            if (not pet.isvalid or cities:contains(world.area)) then
-                maneuvers:clear()
-                maneuvers_to_apply:clear()
-            elseif (maneuvers:length() >= 3) then
-                maneuvers_to_apply:clear()
-            elseif (pet.isvalid and pet.name and player.status_id <= 1) then
-                if (modes.verbose.active) then
-                    windower.add_to_chat(17, "Reapplying "..maneuvers_to_apply[1])
-                end
-                local d = windower.ffxi.get_ability_recasts()[210]
-                if (d and d > 0) then
+            if (pet_engage_commands:contains(player.main_job) and modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
+                send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
+            end
+        
+            if (modes.pet.auto_maneuvers and maneuvers_to_apply and maneuvers_to_apply:length() > 0) then
+                --windower.add_to_chat(17, "Maneuvers: "..tostring(maneuvers:length()))
+                if (not pet.isvalid or cities:contains(world.area)) then
+                    maneuvers:clear()
+                    maneuvers_to_apply:clear()
+                elseif (maneuvers:length() >= 3) then
+                    maneuvers_to_apply:clear()
+                elseif (pet.isvalid and pet.name and player.status_id <= 1) then
                     if (modes.verbose.active) then
-                        windower.add_to_chat(17, "Waiting on recast "..maneuvers_to_apply[1])
+                        windower.add_to_chat(17, "Reapplying "..maneuvers_to_apply[1])
                     end
-                    return
-                end
+                    local d = windower.ffxi.get_ability_recasts()[210]
+                    if (d and d > 0) then
+                        if (modes.verbose.active) then
+                            windower.add_to_chat(17, "Waiting on recast "..maneuvers_to_apply[1])
+                        end
+                        return
+                    end
 
-                send_command('input /ja "'..maneuvers_to_apply[1]..'" <me>')
+                    send_command('input /ja "'..maneuvers_to_apply[1]..'" <me>')
+                end
             end
         end
     end
 
+    -- Auto Item Use
+    if (last_potion_check_time + potion_check_delay) then
+        if (player.status_id <= 1 and not is_disabled()) then
+            last_potion_check_time = time
+            if (buffactive['Doom'] and modes.potions and modes.potions.doom) then
+                if (player.inventory[4154] and player.inventory[4154].count > 0) then
+                    send_command("input /item 'holy water' <me>")
+                end
+            elseif (buffactive['Blind'] and modes.potions and modes.potions.blind) then
+                if (player.inventory[4150] and player.inventory[4150].count > 0) then
+                    send_command("input /item 'eye drops' <me>")
+                end
+            end
+        end
+    end
+
+    -- Auto DT Check
     if (modes.auto_dt and modes.auto_dt.low_hp and modes.dt.hp_temp == 'Off' and player.hpp < modes.dt.low_hp) then
         modes.dt.hp_temp = 'Max'
         gear_up()
-    else
+    elseif (modes.dt.hp_temp ~= 'Off') then
         modes.dt.hp_temp = 'Off'
     end
     
-    if (player.status_id <= 1 and not is_disabled() and last_potion_check_time + potion_check_delay) then
-        last_potion_check_time = time
-        if (buffactive['Doom'] and modes.potions and modes.potions.doom) then
-            if (player.inventory[4154] and player.inventory[4154].count > 0) then
-                send_command("input /item 'holy water' <me>")
-            end
-        elseif (buffactive['Blind'] and modes.potions and modes.potions.blind) then
-            if (player.inventory[4150] and player.inventory[4150].count > 0) then
-                send_command("input /item 'eye drops' <me>")
-            end
-        end
-    end
 end)
 
 ----[[[[ Action Packet Processing ]]]]----
-windower.register_event('action', function(act)
+windower.raw_register_event('action', function(act)
     local current_action = T(act)
     local actor = T{}
     local is_mob = false
@@ -989,14 +1000,14 @@ windower.register_event('action', function(act)
 end)
 
 ----[[[[ Zone Changes ]]]]----
-windower.register_event('zone change', function()
+windower.raw_register_event('zone change', function()
     -- Clear stances and such 
     maneuvers:clear()
     maneuvers_to_apply:clear()
-    stance = {}
+    modes.stance = {}
 
-    last_maneuver_check_time = os.clock() + 30
-    last_stance_check_time = os.clock() + 30
+    last_maneuver_check_time = os.clock() + 60
+    last_stance_check_time = os.clock() + 60
 end)
 
 ----[[[[ Player Command Processing ]]]]----
@@ -1008,15 +1019,12 @@ function self_command(command)
     if command == 'weapon_f' then
         rotate_weapons_forward()
         gear_up()
-        return
     elseif command == 'weapon_b' then
         rotate_weapons_backward()
         gear_up()
-        return
     elseif command == 'pettype' then
         rotate_pet_type_forward()
         gear_up()
-        return
     elseif command == 'petpriority' then
         if modes.pet.priority == 'Player' then
             modes.pet.priority = 'Hybrid'
@@ -1038,28 +1046,24 @@ function self_command(command)
     elseif command == 'idle' then
         rotate_idle_forward()
         gear_up()
-        return
     elseif command == 'melee' then
         rotate_melee_forward()
         if modes.verbose.active then
             windower.add_to_chat(207, 'melee mode is now: '..melee_set_names[modes.melee.type])
         end
         gear_up()
-        return
     elseif command == "ranged" then
         rotate_ranged_forward()
         if modes.verbose.active then
             windower.add_to_chat(207, 'ranged mode is now: '..ranged_set_names[modes.ranged.type])
         end
         gear_up()
-        return
     elseif command == 'magic' then
         rotate_magic_forward()
         if modes.verbose.active then
             windower.add_to_chat(207, 'magic mode is now: '..magic_set_names[modes.magic.type])
         end
         gear_up()
-        return
     elseif command == 'interrupt' then
         if modes.interrupt.type == 'Off' then
             modes.interrupt.type='Min'
@@ -1078,7 +1082,6 @@ function self_command(command)
         if modes.verbose.active then
             windower.add_to_chat(207, 'ws mode is now: '..ws_set_names[modes.ws.type])
         end
-        return
     elseif command =="dt" then
         if modes.dt.type == 'Off' then
             modes.dt.type='DT'

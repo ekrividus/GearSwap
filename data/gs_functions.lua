@@ -194,7 +194,6 @@ function rotate_idle_forward()
     local next = false
     local new_idle_mode, first = nil, nil
     for k,v in pairs(idle_set_names) do
-        windower.add_to_chat(17, k.." == "..v)
         if next == true then
             new_idle_mode = k
             break
@@ -542,8 +541,6 @@ function apply_maneuver(manuever)
     if (manuever == nil) then
         return
     end
-
-
 end
 
 ----[[[[ Stance Maintenance ]]]]----
