@@ -40,7 +40,10 @@ pet_action_max_time = 2
 no_prerender = true
 
 -- Newly added variables that might be missing in modes object, but hopefully aren't
-modes.keep_tp.amount = modes.keep_tp.amount or 500
+modes.keep_tp = modes.keep_tp or {
+    active = true,
+    amount = 700,
+}
 
 function gear_up()
     local time = os.clock()
@@ -67,6 +70,14 @@ function gear_up()
         set = set_combine(set, sets.Weapons[modes.weapons.set])
     end
     sets_list = sets_list.."\nGear sets: "
+
+-- Add weapons to set
+if (weapons_changed or (modes.keep_tp.active == false and modes.keep_tp.amount and player.tp < modes.keep_tp.amount)) then
+    if (sets.Weapons[modes.weapons.set]) then
+        sets_list = sets_list..'Weapon-'..tostring(modes.weapons.set).." "
+        set = set_combine(set, sets.Weapons[modes.weapons.set])
+    end
+end
 
 -- Merge player set by player state
     if (player.status == 'Engaged') then
@@ -97,6 +108,15 @@ function gear_up()
         sets_list = sets_list..('Player-Idle ')
     end
 
+-- Enspell gear if we have and Enspell set and are engaged and an Enspell is active
+    if (player.status == 'Engaged' and sets.Player.Engaged.Enspell) then
+        for k,v in pairs (enspells) do
+            if (buffactive[k]) then
+                set = set_combine(set, sets.Player.Engaged.Enspell, sets.Player.Engaged.Enspell[k:split(" ")[1]])
+            end
+        end
+    end
+
 -- Merge pet set by pet state and priority
     if (pet.isvalid) then
         if (player.status == 'Idle' or modes.pet.priority == 'Pet') then
@@ -108,14 +128,6 @@ function gear_up()
         elseif (player.status == 'Engaged' and modes.pet.priority == 'Hybrid') then
             sets_list = sets_list.."Hybrid-"..tostring(melee_set_names[modes.melee.type])
             set = set_combine(set, sets.Hybrid[melee_set_names[modes.melee.type]])
-        end
-    end
-
--- Add weapons to set
-    if (weapons_changed or (modes.keep_tp.active == false and modes.keep_tp.amount and player.tp < modes.keep_tp.amount)) then
-        if (sets.Weapons[modes.weapons.set]) then
-            sets_list = sets_list..'Weapon-'..tostring(modes.weapons.set).." "
-            set = set_combine(set, sets.Weapons[modes.weapons.set])
         end
     end
 
@@ -175,11 +187,18 @@ function gear_up()
         sets_list = sets_list..'Low-HP-DT '
         set = set_combine(set, sets.DT.DT, sets.DT.MEva, sets.DT.Max)
     end
-    
+
+-- Overdrive is life
     if (buffactive["Overdrive"] and sets.Pet.Overdrive) then
         sets_list = sets_list..'Pup-Overdrive '
         set = set_combine(set, sets.Pet.Overdrive, sets.Pet.Overdrive[modes.pet.type])
     end
+
+-- AFAC active don't take off BP gear
+if buffactive["Astral Conduit"] then
+    sets_list = "Astral Flow + Astral Conduit Only"
+    set = {}
+end
 
 -- CP back stays on 
     if (modes.cp.active) then
@@ -191,12 +210,6 @@ function gear_up()
     if (in_town()) then
         sets_list = sets_list..(' ***Town*** ')
         set = set_combine(set, sets.Player.Idle.Town)
-    end
-
--- We're AFACing so make sure we aren't taking off BP gear
-    if buffactive["Astral Conduit"] then
-        sets_list = "Astral Flow + Astral Conduit Only"
-        set = {}
     end
 
     if (modes.verbose.active) then
@@ -636,11 +649,11 @@ function midcast(spell)
         end
     end
 
-    if (barspells and (barspells:contains(short_spell) or barspells:contains(spell.name)) or (short_spell:slice(1,3)=="Bar" and sets.Enhancing)) then
+    if (barspells and (barspells:contains(short_spell) or barspells:contains(spell.name)) and sets.Enhancing) then
         set = set_combine(set, sets.Enhancing.Barspell)
     end
 
-    if (enspells and (enspells:contains(short_spell) or enspells:contains(spell.name))) then
+    if (enspells and (enspells:contains(short_spell) or enspells:contains(spell.name)) and sets.Enhancing) then
         set = set_combine(set, sets.Enhancing.Enspell)
     end
     
@@ -882,7 +895,7 @@ windower.register_event('prerender', function(...)
             return
         end
 
-        if (modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
+        if (pet_engage_commands:contains(player.main_job) and modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
             send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
         end
     
