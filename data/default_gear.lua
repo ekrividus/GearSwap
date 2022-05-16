@@ -18,10 +18,6 @@ sets.Current = {}
 
 --[[ Weapon Sets - Names should match the names in modes.weapons.options ]]--
 sets.Weapons = {}
-sets.Weapons['Empty'] = {
-    main="",
-    sub="",
-}
 
 --[[ Engaged Sets ]]--
 
@@ -36,6 +32,19 @@ sets.Player.Engaged = {}
 sets.Player.Engaged.MinAcc = set_combine(sets.Player.Engaged, {})
 sets.Player.Engaged.MidAcc = set_combine(sets.Player.Engaged, {})
 sets.Player.Engaged.MaxAcc = set_combine(sets.Player.Engaged, {})
+
+sets.Weapons['Empty'] = {
+    main="",
+    sub="",
+}
+sets.Weapons['Empty'].MinAcc = set_combine(sets.Player.Engaged.MinAcc, {})
+sets.Weapons['Empty'].MidAcc = set_combine(sets.Player.Engaged.MinAcc, {})
+sets.Weapons['Empty'].MaxAcc = set_combine(sets.Player.Engaged.MinAcc, {})
+
+sets.Weapons['Empty'].Aftermath = set_combine(sets.Player.Engaged, {})
+sets.Weapons['Empty'].MinAcc.Aftermath = set_combine(sets.Weapons['Empty'].Aftermath, {})
+sets.Weapons['Empty'].MidAcc.Aftermath = set_combine(sets.Weapons['Empty'].MinAcc.Aftermath, {})
+sets.Weapons['Empty'].MaxAcc.Aftermath = set_combine(sets.Weapons['Empty'].MidAcc.Aftermath, {})
 
 sets.Haste = {}
 sets.Haste[10] = {}
@@ -71,6 +80,7 @@ sets.Pet.DT.MEVA = {}
 sets.Pet.DT.Max = {}
 sets.Pet.Idle = {}
 sets.Pet.Engaged = {}
+sets.Pet.Breath = {}
 
 --[[ Pet Mode Sets ]]--
 sets.Pet.Melee = {}
@@ -224,6 +234,8 @@ sets.FC.Geomancy = {}
 sets.FC.Healing = {}
 sets.FC.Ninjutsu = {}
 sets.FC.Singing = {}
+sets.FC.Singing.Dummy = {}
+
 sets.FC.Summoning = {}
 
 sets.FC.Fire = {}
@@ -297,6 +309,7 @@ sets.Ninjutsu.Enfeebling = {}
 sets.Ninjutsu.Elemental = {}
 
 sets.Singing = {}
+sets.Singing.Dummy = {}
 
 sets.Summoning = {}
 
