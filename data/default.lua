@@ -497,7 +497,7 @@ function precast(spell)
     if (sets.JA[spell.english]) then
         set = set_combine(set, sets.JA[spell.english])
     end
-    if (dummy_songs and dummy_songs:contains(short_spell) and sets.FC and sets.FC.Singing) then 
+    if (dummy_songs and dummy_songs:contains(spell.name) and sets.FC and sets.FC.Singing) then 
         set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
     end
 
@@ -662,7 +662,7 @@ function midcast(spell)
         set = set_combine(set, sets.Enhancing.Enspell)
     end
     
-    if (dummy_songs and dummy_songs:contains(short_spell) and sets.FC and sets.FC.Singing) then 
+    if (dummy_songs and dummy_songs:contains(spell.name) and sets.FC and sets.FC.Singing) then 
         set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
     end
 
