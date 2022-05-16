@@ -90,7 +90,7 @@ end
         if (sets.Weapons[modes.weapons.set] and sets.Weapons[modes.weapons.set][melee_set_names[modes.melee.type]]) then
             set = set_combine(set, sets.Weapons[modes.weapons.set][melee_set_names[modes.melee.type]])
             if (buffactive["Aftermath: Lv.3"] or buffactive["Aftermath: Lv.2"] or buffactive["Aftermath: Lv.1"]) then
-                set = set_combine(set, sets.Weapons[modes.weapons.set][melee_set_names[modes.melee.type]].Aftermath)
+                set = set_combine(set, sets.Weapons[modes.weapons.set].Aftermath, sets.Weapons[modes.weapons.set][melee_set_names[modes.melee.type]].Aftermath)
             end
         end
 
@@ -292,6 +292,7 @@ end
 
 ----[[[[ Player Precast ]]]]----
 function precast(spell)
+    if (not spell.name) then return end
     -- windower.add_to_chat(207, "Spell Precast")
 
     if ((spell.name == 'Ranged' or (spell.type == 'WeaponSkill' and ranged_weaponskills:contains(spell.name))) and no_shoot_gear:contains(player.equipment.ammo)) then
@@ -484,17 +485,20 @@ function precast(spell)
         end
     end
     
-    if sets.JA[spell.type] then
+    if (sets.JA[spell.type]) then
         set = set_combine(set, sets.JA[spell.type])
     end
-    if sets.JA[short_spell] then 
+    if (sets.JA[short_spell]) then 
         set = set_combine(set, sets.JA[short_spell])
     end
-    if short_spell_2 and short_spell_2 ~= "N/A" and sets.JA[short_spell_2] then
+    if (short_spell_2 and short_spell_2 ~= "N/A" and sets.JA[short_spell_2]) then
         set = set_combine(set, sets.JA[short_spell_2])
     end
-    if sets.JA[spell.english] then
+    if (sets.JA[spell.english]) then
         set = set_combine(set, sets.JA[spell.english])
+    end
+    if (dummy_songs and dummy_songs:contains(short_spell) and sets.FC and sets.FC.Singing) then 
+        set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
     end
 
     -- Enmity adjustment gear if desired
@@ -658,6 +662,10 @@ function midcast(spell)
         set = set_combine(set, sets.Enhancing.Enspell)
     end
     
+    if (dummy_songs and dummy_songs:contains(short_spell) and sets.FC and sets.FC.Singing) then 
+        set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
+    end
+
     if (modes.bursting.active) then
         set = set_combine(set, sets.MB, sets.Magic.MB)
         if (sets[short_skill]) then

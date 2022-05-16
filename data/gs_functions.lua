@@ -374,8 +374,7 @@ end
 
 ----[[[[ Calculate Haste/Flurry Gear Needed ]]]]----
 function calc_haste()
-    local haste_val, mhaste, dw_needed = 0, 0, 100
-    local haste_needed = 25
+    local haste_val, mhaste, haste_needed, dw_needed = 0, 0, 25, 100
 
     if (buffactive[580]) then
         haste_val = haste_val + 30

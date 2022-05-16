@@ -404,6 +404,7 @@ blue_enfeebling = T{
     "Blistering Roar",
 }
 
+----[[[[ Enhancing Magic Tables ]]]]----
 barspells = T{
     "Barfire", "Barfira",
     "Barblizzard", "Barblizzara",
@@ -417,3 +418,6 @@ enspells = T{
     "Enthunder", "Enstone", "Enaero", "Enblizzard", "Enfire", "Enwater", "Enlight", "Endark", 
     "Enthunder II", "Enstone II", "Enaero II", "Enblizzard II", "Enfire II", "Enwater II", "Enlight II","Endark II",
 }
+
+----[[[[ Bard Dummy Songs ]]]]----
+dummy_songs = T{"Army's Paeon", "Army's Paeon II", }
