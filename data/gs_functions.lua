@@ -85,32 +85,40 @@ end
 function init_gui()
     gui = texts.new(defaults.gui, defaults)
     gui:append('Wpn ([C]S+F7): ${weapon_set|Unk} |')
+    gui:append('Idl (C+F12): ${idle_type|Unk} |')
     gui:append('Mle (C+F7): ${melee_type|Unk} |')
+    
     if (T{'WAR','THF','NIN','COR','RNG','DNC'}:contains(player.main_job) or T{'WAR','THF','NIN','COR','RNG','DNC'}:contains(player.sub_job)) then
         gui:append('Rng (C+F8): ${ranged_type|Unk} |')
     end
     gui:append('WS (C+F9): ${ws_type|Unk} |')
+    
     if (T{'WHM','BLM','RDM','PLD','DRK','BRD','NIN','SMN','BLU','SCH','GEO','RUN'}:contains(player.main_job) or T{'WHM','BLM','RDM','PLD','DRK','BRD','NIN','SMN','BLU','SCH','GEO','RUN'}:contains(player.sub_job)) then
         gui:append('Mgc (C+F10/F11): ${magic_type|Unk} ${magic_si|Unk} |')
     end
-    gui:append('Idl (C+F12): ${idle_type|Unk} |')
+    
     if (T{'NIN','DNC','THF','BLU'}:contains(player.main_job) or T{'NIN','DNC'}:contains(player.sub_job)) then
         gui:append('DW (S+F8): ${dual_wield|Unk} |')
     end
-    gui:append('DT (S+F9~F12): ${dt_type|Unk} ${dt_meva|Unk} |')
+    
     if (T{'BST','SMN','PUP','GEO'}:contains(player.main_job)) then
         gui:append('Pet (A+F10~F12): ${pet_type|Unk} ${pet_priority|Unk} ${pet_dt|Unk} |')
     end
+
+    gui:append('DT (S+F9~F12): ${dt_type|Unk} ${dt_meva|Unk} |')
     gui:append('Enm (A+F7): ${enmity_type|Unk} |')
-    gui:append('CP (W+F7): ${cp|Unk} |')
+    
     if (T{'THF','RNG'}:contains(player.main_job) or T{'THF'}:contains(player.sub_job)) then
         gui:append('TH (W+F8): ${th|Unk} |')
     end
-    gui:append('G.Up (W+F12)')
+
     if (modes.stance and modes.stance.name) then
-        gui:append(' | Stance: ${stance|None}')
+        gui:append('Stance: ${stance|None} |')
     end
 
+    gui:append('CP (W+F7): ${cp|Unk} |')
+    gui:append('G.Up (W+F12)')
+    
     update_gui()
     gui:show()
 end
