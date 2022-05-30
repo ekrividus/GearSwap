@@ -79,12 +79,12 @@ function gear_up(spell)
     sets_list = sets_list.."\nGear sets: "
 
 -- Add weapons to set
-if (weapons_changed or (modes.keep_tp.active == false and modes.keep_tp.amount and player.tp < modes.keep_tp.amount)) then
-    if (sets.Weapons[modes.weapons.set]) then
-        sets_list = sets_list..'Weapon-'..tostring(modes.weapons.set).." "
-        set = set_combine(set, sets.Weapons[modes.weapons.set])
+    if (weapons_changed or (modes.keep_tp.active == false and modes.keep_tp.amount and player.tp < modes.keep_tp.amount)) then
+        if (sets.Weapons[modes.weapons.set]) then
+            sets_list = sets_list..'Weapon-'..tostring(modes.weapons.set).." "
+            set = set_combine(set, sets.Weapons[modes.weapons.set])
+        end
     end
-end
 
 -- Merge player set by player state
     if (player.status == 'Engaged') then
@@ -146,12 +146,18 @@ end
 
 -- Buff Active Gear if job has any buffactive sets and that buff is active keep the gear on
 if (sets.BuffActive) then
-    windower.add_to_chat(207, "BuffActive sets present, cycling ...")
+    if (modes.verbose.active) then
+        windower.add_to_chat(207, "BuffActive sets present, cycling ...")
+    end
     sets_list = sets_list..('Player-BuffActive ')
     for k,v in pairs (sets.BuffActive) do
-        windower.add_to_chat(207, "Buff Sets ["..k.."] Buff Active? "..(buffactive[k]==1 and "Yes " or "No ").."| Just Cast? "..(spell.name == k and "Yes " or "No "))
+        if (modes.verbose.active) then
+            windower.add_to_chat(207, "Buff Sets ["..k.."] Buff Active? "..(buffactive[k]==1 and "Yes " or "No ").."| Just Cast? "..(spell.name == k and "Yes " or "No "))
+        end
         if (buffactive[k] or spell.name == k) then
-            windower.add_to_chat(207, "Set && buffactive["..k.."], equipping.")
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Set && buffactive["..k.."], equipping.")
+            end
             set = set_combine(set, sets.BuffActive[k])
         end
     end
