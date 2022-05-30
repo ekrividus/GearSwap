@@ -48,7 +48,11 @@ modes.keep_tp = modes.keep_tp or {
     amount = 700,
 }
 
-function gear_up()
+function gear_up(spell)
+    if (not spell or not spell.name) then
+        spell = { name = "None", }
+    end
+
     local time = os.clock()
     if (time > (pet_action_start_time + pet_action_max_time)) then
         pet_action = false
@@ -111,15 +115,6 @@ end
         sets_list = sets_list..('Player-Idle ')
     end
 
--- Enspell gear if we have and Enspell set and are engaged and an Enspell is active
-    if (player.status == 'Engaged' and sets.Player.Engaged.Enspell) then
-        for k,v in pairs (enspells) do
-            if (buffactive[k]) then
-                set = set_combine(set, sets.Player.Engaged.Enspell, sets.Player.Engaged.Enspell[k:split(" ")[1]])
-            end
-        end
-    end
-
 -- Merge pet set by pet state and priority
     if (pet.isvalid) then
         if (player.status == 'Idle' or modes.pet.priority == 'Pet') then
@@ -149,20 +144,32 @@ end
         set = set_combine(set, sets.Enmity.Down)
     end
 
+-- Buff Active Gear if job has any buffactive sets and that buff is active keep the gear on
+if (sets.BuffActive) then
+    windower.add_to_chat(207, "BuffActive sets present, cycling ...")
+    sets_list = sets_list..('Player-BuffActive ')
+    for k,v in pairs (sets.BuffActive) do
+        windower.add_to_chat(207, "Buff Sets ["..k.."] Buff Active? "..(buffactive[k]==1 and "Yes " or "No ").."| Just Cast? "..(spell.name == k and "Yes " or "No "))
+        if (buffactive[k] or spell.name == k) then
+            windower.add_to_chat(207, "Set && buffactive["..k.."], equipping.")
+            set = set_combine(set, sets.BuffActive[k])
+        end
+    end
+end
+
+-- Enspell gear if we have and Enspell set and are engaged and an Enspell is active
+if (player.status == 'Engaged' and sets.Player.Engaged.Enspell) then
+    for k,v in pairs (enspells) do
+        if (buffactive[k] or spell.name == k) then
+            set = set_combine(set, sets.Player.Engaged.Enspell, sets.Player.Engaged.Enspell[k:split(" ")[1]])
+        end
+    end
+end
+
 -- TH Gear should stay on if TH mode is on and we're engage, maybe f/t would be better?
     if (modes.th.active and player.status == "Engaged") then
         sets_list = sets_list..('Player-TH ')
         set = set_combine(set, sets.TH)
-    end
-
--- Buff Active Gear if job has any buffactive sets and that buff is active keep the gear on
-    if (sets.BuffActive) then
-        sets_list = sets_list..('Player-BuffActive ')
-        for k,v in pairs (sets.BuffActive) do
-            if (buffactive[k]) then
-                set = set_combine(set, sets.BuffActive[k])
-            end
-        end
     end
 
 -- DT Modes trump most things
@@ -192,16 +199,16 @@ end
     end
 
 -- Overdrive is life
-    if (buffactive["Overdrive"] and sets.Pet.Overdrive) then
+    if ((buffactive["Overdrive"] or spell.name == "Overdrive") and sets.Pet.Overdrive) then
         sets_list = sets_list..'Pup-Overdrive '
         set = set_combine(set, sets.Pet.Overdrive, sets.Pet.Overdrive[modes.pet.type])
     end
 
 -- AFAC active don't take off BP gear
-if buffactive["Astral Conduit"] then
-    sets_list = "Astral Flow + Astral Conduit Only"
-    set = {}
-end
+    if (buffactive["Astral Conduit"] or spell.name == "Astral Conduit") then
+        sets_list = "Astral Flow + Astral Conduit Only"
+        set = {}
+    end
 
 -- CP back stays on 
     if (modes.cp.active) then
@@ -296,9 +303,9 @@ function precast(spell)
     -- windower.add_to_chat(207, "Spell Precast")
 
     if ((spell.name == 'Ranged' or (spell.type == 'WeaponSkill' and ranged_weaponskills:contains(spell.name))) and no_shoot_gear:contains(player.equipment.ammo)) then
-        cancel_spell()
         send_command('input /equip ammo ""')
         windower.add_to_chat(207, 'Ranged attack canceled due to ammo conflict! '..player.equipment.ammo..' should not be shot!')
+        cancel_spell()
         gear_up()
         return
     end
@@ -448,7 +455,10 @@ function precast(spell)
         end
 
         if sets.WS[spell.english] then
-            set = set_combine(set, sets.WS[spell.english], sets.WS[spell.english][ws_set_names[modes.ws.type]])
+            set = set_combine(
+                set, sets.WS[spell.english], sets.WS[spell.english][ws_set_names[modes.ws.type]], 
+                sets.WS[spell.name][world.day_element], sets.WS[spell.name][world.weather_element]
+            )
             if (buffactive["Trick Attack"]) then 
                 set = set_combine(set, sets.WS[spell.english].TA)
             end
@@ -457,7 +467,10 @@ function precast(spell)
             end
         end
         if (sets.Weapons[modes.weapon_set] and sets.Weapons[modes.weapon_set][spell.name]) then
-            set = set_combine(set, sets.Weapons[modes.weapon_set][spell.name], sets.Weapons[modes.weapon_set][spell.name][ws_set_names[modes.ws.type]])
+            set = set_combine(
+                set, sets.Weapons[modes.weapon_set][spell.name], sets.Weapons[modes.weapon_set][spell.name][ws_set_names[modes.ws.type]], 
+                sets.Weapons[modes.weapon_set][spell.name][world.day_element], sets.Weapons[modes.weapon_set][spell.name][world.weather_element]
+            )
         end
 
         -- SATA gear after everything else except enmity adjusters
@@ -770,6 +783,7 @@ end
 
 ----[[[[ Aftercast ]]]]----
 function aftercast(spell)
+    set = {}
     -- Disable TH WS gear
     if (th_ws) then
         th_ws = false
@@ -784,10 +798,14 @@ function aftercast(spell)
     end
 
     -- windower.add_to_chat(207, "Spell Aftercast")
-    if (player.main_job == "DRG" and pet_action) then
-        windower.add_to_chat(207, "Wyvern Breath Attack Set Equip")
-        if (T{"WAR","MNK","THF","BST","RNG","SAM","COR","PUP","DNC","PLD","DRK","BRD","NIN","RUN"}:contains(player.sub_job)) then
+    if (player.main_job == "DRG" and pet_action and sets.Pet and sets.Pet.Breath) then
+        if (modes.verbose.active) then
             windower.add_to_chat(207, "Wyvern Breath Attack Set Equip")
+        end
+        if (T{"WAR","MNK","THF","BST","RNG","SAM","COR","PUP","DNC","PLD","DRK","BRD","NIN","RUN"}:contains(player.sub_job)) then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Wyvern Breath Attack Set Equip")
+            end
             if (sets.Pet and sets.Pet.Breath) then
                 equip(sets.Pet.Breath, sets.Pet.Breath.Attack)
             end
@@ -801,7 +819,7 @@ function aftercast(spell)
         return 
     end
 
-    gear_up()
+    gear_up(spell)
 end
 
 function pet_aftercast(spell)
@@ -819,7 +837,7 @@ function pet_aftercast(spell)
     if (modes.verbose.active) then
         windower.add_to_chat(207, "Pet Aftercast "..delta_pet_time)
     end
-    gear_up()
+    gear_up(spell)
 end
 
 ----[[[[ Status Change Functions ]]]]----
