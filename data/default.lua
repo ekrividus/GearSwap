@@ -36,6 +36,7 @@ potion_check_delay = 1
 haste_needed = 0
 snapshot_needed = 0
 
+player_action = false
 pet_action = false
 pet_action_start_time = 0
 pet_action_max_time = 2
@@ -316,6 +317,7 @@ function precast(spell)
         return
     end
 
+    player_action = true
     -- Don't overwrite certain effects, Warcy and such --
     if (spell.name == 'Warcry' or spell.name == 'Blood Rage') then
         if (buffactive['Blood Rage'] or  buffactive['Warcry']) then
@@ -553,6 +555,7 @@ function midcast(spell)
         return
     end
 
+    player_action = true
     local set = T{}
 
     local short_element = (spell.element ~= nil and spell.element:split(" ")[1] or "N/A")
@@ -746,6 +749,7 @@ function pet_midcast(spell)
         return
     end
 
+    pet_action = true
     local set = {}
     local short_element = (spell.element ~= nil and spell.element:split(" ")[1] or "N/A")
     local short_spell = spell.english:split(" ")[1]
@@ -825,12 +829,12 @@ function aftercast(spell)
         return 
     end
 
+    player_action = false
     gear_up(spell)
 end
 
 function pet_aftercast(spell)
     local delta_pet_time = os.clock() - pet_action_start_time
-    pet_action = false
 
     -- Don't change out of BloodPact Gear between Bloodpacts during Astral Conduit
     if (buffactive["Astral Conduit"] and (spell.type == 'BloodPactWard' or spell.type == "BloodPactRage")) then
@@ -843,6 +847,8 @@ function pet_aftercast(spell)
     if (modes.verbose.active) then
         windower.add_to_chat(207, "Pet Aftercast "..delta_pet_time)
     end
+    
+    pet_action = false
     gear_up(spell)
 end
 
@@ -978,13 +984,14 @@ windower.raw_register_event('prerender', function(...)
     end
 
     -- Auto DT Check
-    if (modes.auto_dt and modes.auto_dt.low_hp and modes.dt.hp_temp == 'Off' and player.hpp < modes.dt.low_hp) then
-        modes.dt.hp_temp = 'Max'
-        gear_up()
-    elseif (modes.dt.hp_temp ~= 'Off') then
-        modes.dt.hp_temp = 'Off'
+    if (not player_action and not pet_action) then
+        if (modes.auto_dt and modes.auto_dt.low_hp and modes.dt.hp_temp == 'Off' and player.hpp < modes.dt.low_hp) then
+            modes.dt.hp_temp = 'Max'
+            gear_up()
+        elseif (modes.dt.hp_temp ~= 'Off') then
+            modes.dt.hp_temp = 'Off'
+        end
     end
-    
 end)
 
 ----[[[[ Action Packet Processing ]]]]----
