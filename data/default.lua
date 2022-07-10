@@ -310,22 +310,7 @@ function precast(spell)
         return
     end
 
-    -- For auto_dt to not overwrite our pre/midcast sets
     player_action = true
-
-    if (spell.type == 'Magic' and modes.potions.silence and buffactive['Silence']) then
-        cancel_spell()
-        if (player.inventory[4151] and player.inventory[4151].count > 0) then
-            send_command("input /item 'echo drops' <me>")
-        end
-    end
-    
-    if (spell.name:contains("Cure")) then
-        adjust_cure(spell)
-    elseif (spell.name:contains("Curing Waltz")) then
-        adjust_waltz(spell)
-    end
-
     -- Don't overwrite certain effects, Warcy and such --
     if (spell.name == 'Warcry' or spell.name == 'Blood Rage') then
         if (buffactive['Blood Rage'] or  buffactive['Warcry']) then
@@ -767,6 +752,7 @@ function pet_midcast(spell)
         return
     end
 
+    pet_action = true
     local set = {}
     local short_element = (spell.element ~= nil and spell.element:split(" ")[1] or "N/A")
     local short_spell = spell.english:split(" ")[1]
@@ -864,7 +850,7 @@ function pet_aftercast(spell)
     if (modes.verbose.active) then
         windower.add_to_chat(207, "Pet Aftercast "..delta_pet_time)
     end
-
+    
     pet_action = false
     gear_up(spell)
 end
@@ -1000,7 +986,7 @@ windower.raw_register_event('prerender', function(...)
         end
     end
 
-    -- Auto DT Check, if we aren't already in the middle of an action only
+    -- Auto DT Check
     if (not player_action and not pet_action) then
         if (modes.auto_dt and modes.auto_dt.low_hp and modes.dt.hp_temp == 'Off' and player.hpp < modes.dt.low_hp) then
             modes.dt.hp_temp = 'Max'
@@ -1009,7 +995,6 @@ windower.raw_register_event('prerender', function(...)
             modes.dt.hp_temp = 'Off'
         end
     end
-    
 end)
 
 ----[[[[ Action Packet Processing ]]]]----
