@@ -47,6 +47,10 @@ end
 function load_settings()
     danger = config.load('data\\settings\\danger.xml', danger_defaults)
     settings = config.load('data\\settings\\'..player.name..'_'..player.main_job..'.xml', defaults)
+    settings.job = settings.job or {
+        cure_potency=0,
+        waltz_potency=0,
+    }
 end
 
 function load_gear_file()
@@ -643,9 +647,16 @@ function danger_check(name, type, id)
     else
         word = gearswap.res.monster_abilities:with('id', id).name
     end
-    
+
+    if (not word or word == '') then
+        return {set='', delay=0, ability=word, turn=false, hold=1}
+    end
+
     for m, v in pairs(danger) do
         if (v.ability == word) then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, v.ability.." == "..word.."? "..(v.ability == word and "Yes" or "No"))
+            end
             return {set=v.set, delay=cast_time, ability=word, turn=v.turn, hold=v.hold}
         end
     end
@@ -711,29 +722,160 @@ function add_danger(args)
     danger:save('all')
 end
 
---TODO: Adjust -na, any -na spell cast will be swapped for priority -na cursna > silena > poisona for instance
+--[[
+    TODO: Adjust -na, any -na spell cast will be swapped for priority -na cursna > silena > poisona for instance
+]]
 function adjust_na_spell(spell, target)
     return spell.name
 end
 
---TODO: Adjust cure/curaga spells based on targets missing hp and cure potency
-function adjust_cure(spell, target, potency)
-    return spell.name
+function get_missing_hp(target)
+    local alliance = windower.ffxi.get_party()
+    local missingHP = -1
+    if (not target.hpp) then
+        return 1
+    end
+
+    if (target.isallymember) then
+        for k, v in pairs (alliance) do
+            if (type(v) == "table") then
+                for i, m in pairs (v) do
+                    if (v.name == target.name) then
+                        missingHP = math.floor((v.hp / (v.hpp/100)) - v.hp)
+                    end
+                end
+            end
+        end
+    else
+        missingHP = math.floor(1800 - (1800 * (target.hpp/100)))
+        windower.add_to_chat(207, "Gearswap Cure Target: "..target.name.." HP Missing: "..missingHP)
+    end
+    return missingHP
 end
 
---TODO: Adjust waltz abilities based on targets missing hp and waltz potency
-function adjust_waltz(spell, target, potency)
-    return spell.name
+--[[
+    TODO: Adjust cure/curaga spells based on targets missing hp and cure potency
+]]
+function adjust_cure(spell)
+    local spell_short = spell.name:split(" ")[1]
+    local recasts = windower.ffxi.get_spell_recasts()
+    local missingHP = get_missing_hp(spell.target)
+    local spell_tiers = {"", "II", "III", "IV", "V", "VI"}
+    local spell_tier = spell.name:split(" ")[2]
+
+    if (spell_tier) then
+        for k, v in ipairs(spell_tiers) do
+            if (spell_tier == v) then
+                spell_tier = k
+                break
+            end
+        end
+    else
+        spell_tier = 1
+    end
+
+    if (recasts[gearswap.res.spells:with("name", spell.name).id] <= 0 and (spell_tier == 1 or missingHP >= cure_amounts[spell_tier] * (1 + (settings.job.cure_potency/100)))) then
+        return
+    end
+
+    if (recasts[6] == 0 and missingHP >= cure_amounts[6] * (1 + (settings.job.cure_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \""..spell_short.." "..spell_tiers[6].."\" "..spell.target.id)
+        return
+    elseif (recasts[5] == 0 and missingHP >= cure_amounts[5] * (1 + (settings.job.cure_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \""..spell_short.." "..spell_tiers[5].."\" "..spell.target.id)
+        return
+    elseif (recasts[4] == 0 and missingHP >= cure_amounts[4] * (1 + (settings.job.cure_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \""..spell_short.." "..spell_tiers[4].."\" "..spell.target.id)
+        return
+    elseif (recasts[3] == 0 and missingHP >= cure_amounts[3] * (1 + (settings.job.cure_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \""..spell_short.." "..spell_tiers[3].."\" "..spell.target.id)
+        return
+    elseif (recasts[2] == 0 and missingHP >= cure_amounts[2] * (1 + (settings.job.cure_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \""..spell_short.." "..spell_tiers[2].."\" "..spell.target.id)
+        return
+    elseif (recasts[1] == 0) then -- and missingHP >= cure_amounts[1] * (1 + (settings.job.cure_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \""..spell_short.."\" "..spell.target.id)
+        return
+    else
+        cancel_spell()
+        return
+    end
 end
 
---TODO: auto_potion checks for "status" and if it exists uses the appropriate potion, will cancel current spell
+--[[
+    TODO: Adjust waltz abilities based on targets missing hp and waltz potency
+]]
+function adjust_waltz(spell)
+    local recasts = windower.ffxi.get_spell_recasts()
+    local spell_short = T(spell.name:split(" ")):slice(1,2):concat(" ")
+    local missingHP = get_missing_hp(spell.target)
+    local spell_tiers = {"", "II", "III", "IV", "V"}
+    local spell_tier = spell.name:split(" ")[3]
+
+    if (spell_tier) then
+        for k, v in ipairs(spell_tiers) do
+            if (spell_tier == v) then
+                spell_tier = k
+                break
+            end
+        end
+    else
+        spell_tier = 1
+    end
+
+    if (recasts[gearswap.res.job_abilities:with("name", spell.name).id] <= 0 and (spell_tier == 1  or missingHP >= waltz_amounts[spell_tier] * (1 + (settings.job.waltz_potency/100)))) then
+        return
+    end
+
+    if (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz V")] == 0 and missingHP >= waltz_amounts[5] * (1 + (settings.job.waltz_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[5].."\" "..spell.target.name)
+        return
+    elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz IV")] == 0 and missingHP >= waltz_amounts[4] * (1 + (settings.job.waltz_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[4].."\" "..spell.target.name)
+        return
+    elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz III")] == 0 and missingHP >= waltz_amounts[3] * (1 + (settings.job.waltz_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[3].."\" "..spell.target.name)
+        return
+    elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz II")] == 0 and missingHP >= waltz_amounts[2] * (1 + (settings.job.waltz_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[2].."\" "..spell.target.name)
+        return
+    elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz").id] == 0 and missingHP >= waltz_amounts[1] * (1 + (settings.job.waltz_potency/100))) then
+        cancel_spell()
+        windower.chat.input("/ma \"".."Curing Waltz\" "..spell.target.name)
+        return
+    else
+        cancel_spell()
+        windower.chat.input("/ma \"Curing Waltz\" "..spell.target.name)
+        return
+    end
+end
+
+--[[
+    TODO: auto_potion checks for "status" and if it exists uses the appropriate potion, will cancel current spell
+]]
 function auto_potion(status)
     return false
 end
 
---TODO: status alerts for various "important" debuffs, Doom for instance
+--[[
+    TODO: status alerts for various "important" debuffs, Doom for instance
+]]
 function status_alert(status, gained)
     if (settings.status_alerts and settings.status_alerts:contains(status.name)) then
-        windower.send_command("input /"..(settings.status_alert_channel or "p").." --[ "..status.name.." ]--")
+        if (gained) then
+            windower.send_command("input /"..(settings.status_alerts.channel or "p").." --[ I've just been "..status.name.."ed! ]--")
+        else
+            windower.send_command("input /"..(settings.status_alerts.channel or "p").." --[ "..status.name.." has been removed! ]--")
+        end
     end
 end

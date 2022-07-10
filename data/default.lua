@@ -36,6 +36,7 @@ potion_check_delay = 1
 haste_needed = 0
 snapshot_needed = 0
 
+player_action = false
 pet_action = false
 pet_action_start_time = 0
 pet_action_max_time = 2
@@ -262,13 +263,6 @@ end
 ----[[[[ Pretarget ]]]]----
 function pretarget(spell) 
     -- windower.add_to_chat(207, "Spell Pretarget")
-    if (spell.type == 'Magic' and modes.potions.silence and buffactive['Silence']) then
-        cancel_spell()
-        if (player.inventory[4151] and player.inventory[4151].count > 0) then
-            send_command("input /item 'echo drops' <me>")
-        end
-    end
-    
     local set = T{}
     if spell.type == 'BloodPactWard' or spell.type == 'BloodPactRage' then
         set = set_combine(set, sets.BloodPact.Precast)
@@ -314,6 +308,22 @@ function precast(spell)
         cancel_spell()
         gear_up()
         return
+    end
+
+    -- For auto_dt to not overwrite our pre/midcast sets
+    player_action = true
+
+    if (spell.type == 'Magic' and modes.potions.silence and buffactive['Silence']) then
+        cancel_spell()
+        if (player.inventory[4151] and player.inventory[4151].count > 0) then
+            send_command("input /item 'echo drops' <me>")
+        end
+    end
+    
+    if (spell.name:contains("Cure")) then
+        adjust_cure(spell)
+    elseif (spell.name:contains("Curing Waltz")) then
+        adjust_waltz(spell)
     end
 
     -- Don't overwrite certain effects, Warcy and such --
@@ -537,11 +547,6 @@ function precast(spell)
 
 end
 
-----[[[[ Pet Precast ]]]]----
-function pet_precast(spell)
-    -- windower.add_to_chat(207, "Pet Precast")
-end
-
 ----[[[[ Player Midcast ]]]]----
 function midcast(spell)
     -- windower.add_to_chat(207, "Spell Midcast")
@@ -553,6 +558,7 @@ function midcast(spell)
         return
     end
 
+    player_action = true
     local set = T{}
 
     local short_element = (spell.element ~= nil and spell.element:split(" ")[1] or "N/A")
@@ -563,6 +569,7 @@ function midcast(spell)
 
     if (modes.verbose.active) then
         windower.add_to_chat(207, "---- Midcast\nSpell: "..short_spell.." Type: "..short_type.." Skill: "..(short_skill and short_skill or "N/A"))
+        windower.add_to_chat(207, "---- Day: "..world.day_element.." Weather: "..world.weather_element)
     end
 
     if short_skill and short_skill == "Singing" then
@@ -616,27 +623,31 @@ function midcast(spell)
         if (modes.verbose.active == true) then
             windower.add_to_chat(207, "Blue Set Engaged: "..blue_set)
         end
-    elseif (short_skill == "Ninjutsu" and sets.Ninjutsu) then
+    end
+
+    if (short_skill == "Ninjutsu" and sets.Ninjutsu) then
         if (ninjutsu_enhancing:contains(short_spell)) then
             set = set_combine(set, sets.Ninjutsu.Enhancing)
         elseif (ninjutsu_enfeebling:contains(short_spell)) then
             set = set_combine(set, sets.Ninjutsu.Enfeebling)
         elseif (ninjutsu_elemental:contains(short_spell)) then
             set = set_combine(set, sets.Ninjutsu.Elemental)
-        end
-    end
-
-    if short_skill and sets[short_skill] then 
-        set = set_combine(set, sets[short_skill])
-        if (spell.target.type == "SELF") then
-            if (modes.verbose.active) then
-                windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."'] - ON")
+            --windower.add_to_chat(207, short_element.." == "..world.weather_element.." ? "..spell.element)
+            if (short_element == world.weather_element and sets.Elemental and sets.Elemental.Belts) then
+                --windower.add_to_chat(207, "Using elemental belt: "..(sets.Elemental.Belts[short_element] and sets.Elemental.Belts[short_element].waist or "no set for belt"))
+                set = set_combine(set, sets.Elemental.Belts[short_element])
             end
-            set = set_combine(set, sets[short_skill].Self)
         end
     end
+    
+    if (spell.target.type == "SELF" and short_skill and sets[short_skill] and sets[short_skill].Self) then 
+        if (modes.verbose.active) then
+            windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."'] - ON")
+        end
+        set = set_combine(set, sets[short_skill].Self)
+    end
 
-    if short_skill and sets[short_skill] and sets[short_skill][short_spell] then
+    if (short_skill and sets[short_skill] and sets[short_skill][short_spell]) then
         set = set_combine(set, sets[short_skill][short_spell])
         if (spell.target.type == "SELF") then
             if (modes.verbose.active) then
@@ -696,6 +707,15 @@ function midcast(spell)
         set = set_combine(set, sets.SI, sets.SI[modes.interrupt.type])
     end
 
+    if (short_skill == 'Elemental' and sets[short_skill] and sets[short_skill].Belts) then
+        if (short_element == world.day_element) then
+            set = set_combine(set, sets[short_skill].Belts[world.day_element])
+        end
+        if (short_element == world.weather_element) then
+            set = set_combine(set, sets[short_skill].Belts[world.weather_element])
+        end
+    end
+
     if (spell.english == 'Ranged') then
         set = set_combine(set, sets.Ranged, sets.Ranged[ranged_set_names[modes.ranged.type]])
     end
@@ -738,6 +758,7 @@ end
 function pet_midcast(spell)
     -- windower.add_to_chat(207, "Pet Midcast")
 
+    pet_action = true
     -- Don't change out of BloodPact Gear between Bloodpacts during Astral Conduit
     if (buffactive["Astral Conduit"] and (spell.type == 'BloodPactWard' or spell.type == "BloodPactRage")) then
         if (modes.verbose.active) then
@@ -825,12 +846,12 @@ function aftercast(spell)
         return 
     end
 
+    player_action = false
     gear_up(spell)
 end
 
 function pet_aftercast(spell)
     local delta_pet_time = os.clock() - pet_action_start_time
-    pet_action = false
 
     -- Don't change out of BloodPact Gear between Bloodpacts during Astral Conduit
     if (buffactive["Astral Conduit"] and (spell.type == 'BloodPactWard' or spell.type == "BloodPactRage")) then
@@ -843,6 +864,8 @@ function pet_aftercast(spell)
     if (modes.verbose.active) then
         windower.add_to_chat(207, "Pet Aftercast "..delta_pet_time)
     end
+
+    pet_action = false
     gear_up(spell)
 end
 
@@ -938,7 +961,7 @@ windower.raw_register_event('prerender', function(...)
         
             if (modes.pet.auto_maneuvers and maneuvers_to_apply and maneuvers_to_apply:length() > 0) then
                 --windower.add_to_chat(17, "Maneuvers: "..tostring(maneuvers:length()))
-                if (not pet.isvalid or cities:contains(world.area)) then
+                if (not pet.isvalid or player.status_id >= 2 or cities:contains(world.area)) then
                     maneuvers:clear()
                     maneuvers_to_apply:clear()
                 elseif (maneuvers:length() >= 3) then
@@ -977,12 +1000,14 @@ windower.raw_register_event('prerender', function(...)
         end
     end
 
-    -- Auto DT Check
-    if (modes.auto_dt and modes.auto_dt.low_hp and modes.dt.hp_temp == 'Off' and player.hpp < modes.dt.low_hp) then
-        modes.dt.hp_temp = 'Max'
-        gear_up()
-    elseif (modes.dt.hp_temp ~= 'Off') then
-        modes.dt.hp_temp = 'Off'
+    -- Auto DT Check, if we aren't already in the middle of an action only
+    if (not player_action and not pet_action) then
+        if (modes.auto_dt and modes.auto_dt.low_hp and modes.dt.hp_temp == 'Off' and player.hpp < modes.dt.low_hp) then
+            modes.dt.hp_temp = 'Max'
+            gear_up()
+        elseif (modes.dt.hp_temp ~= 'Off') then
+            modes.dt.hp_temp = 'Off'
+        end
     end
     
 end)
@@ -1262,8 +1287,12 @@ function self_command(command)
         end
         windower.add_to_chat(207, "Angle: "..angle)
         windower.ffxi.turn(angle)
+    elseif command == 'info' then
+        windower.add_to_chat(207, "Zone: "..world.area.." Day: "..world.day_element.." Weather: "..world.weather_element)
+    elseif command == 'save' then
+        settings:save('all')
+        windower.add_to_chat(207, "Gearswap: Settings saved.")
     end
 
-    settings:save('all')
     update_gui()
 end

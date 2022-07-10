@@ -229,6 +229,11 @@ defaults.gui.text.stroke.red = 0
 defaults.gui.text.stroke.green = 0
 defaults.gui.text.stroke.blue = 0
 
+defaults.job = {
+    cure_potency=0,
+    waltz_potency=0,
+}
+
 trusts = S(gearswap.res.spells:type("Trust"):map(string.gsub-{" ", ""} .. table.get-{"name"}))
 
 cities = S{
@@ -421,3 +426,9 @@ enspells = T{
 
 ----[[[[ Bard Dummy Songs ]]]]----
 dummy_songs = T{"Army's Paeon", "Army's Paeon II", }
+
+----[[[[ Cure Spell and Waltz Heal Amounts ]]]]----
+cure_amounts = T{ 70, 150, 300, 600, 800, 1000 }
+curaga_amounts = T{ 90, 190, 390, 690, 960 }
+waltz_amounts = T{ 150, 100, 200, 300, 450 }
+divine_amounts = T{ 60, 280 }
