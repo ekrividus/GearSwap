@@ -677,6 +677,10 @@ function midcast(spell)
         set = set_combine(set, sets.Enhancing.Enspell)
     end
     
+    if (spell.name:split("-")[1] == "Absorb" and sets.Dark) then
+        set = set_combine(set, sets.Dark.Absorb)
+    end
+    
     if (dummy_songs and dummy_songs:contains(spell.name) and sets.FC and sets.FC.Singing) then 
         set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
     end
