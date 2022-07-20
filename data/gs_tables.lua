@@ -432,3 +432,8 @@ cure_amounts = T{ 70, 150, 300, 600, 800, 1000 }
 curaga_amounts = T{ 90, 190, 390, 690, 960 }
 waltz_amounts = T{ 150, 100, 200, 300, 450 }
 divine_amounts = T{ 60, 280 }
+
+----[[[[ Attack Cap values for zones and mobs ]]]]----
+attack_caps = T{ mobs = T{}, zones = T{} }
+attack_caps.mobs['Apex Idle Drifters'] = 3000
+attack_caps.zones['Promyvion - Dem'] = 3200
