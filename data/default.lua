@@ -1,4 +1,7 @@
--- Basic (gearless) gs file for any job, rename to [character][_job][_subjob].lua to suit and fill out gearsets
+--[[
+    Controller file for all Kriv gearswaps. 
+    Don't change this, unless you are willing to potentially break every job that relies on Kriv's gearswaps.
+]]--
 
 require('lists')
 require('logger')
@@ -7,8 +10,9 @@ require('sets')
 require('strings')
 require('tables')
 require('queues')
-files = require('files')
 
+packets = require('packets')
+files = require('files')
 config = require('config')
 texts = require('texts')
 
@@ -36,7 +40,11 @@ potion_check_delay = 1
 haste_needed = 0
 snapshot_needed = 0
 
+player_attack = 0
+last_player_update = 0
+player_update_delay = 10
 player_action = false
+
 pet_action = false
 pet_action_start_time = 0
 pet_action_max_time = 2
@@ -474,6 +482,25 @@ function precast(spell)
             )
         end
 
+        -- Check for attack capped on WS
+        if (player_attack and player_attack > 0) then
+            if (attack_caps.mobs[spell.target.name] and player_attack > attack_caps.mobs[spell.target.name]) then
+                if (modes.verbose.active) then
+                    windower.add_to_chat(207, "WS Attack Capped - Target Mob")
+                end
+                if (sets.WS[spell.english]) then
+                    set = set_combine(set, sets.WS[spell.english].Capped)
+                end
+            elseif (not attack_caps.mobs[spell.target.name] and attack_caps.zones[world.zone] and player_attack > attack_caps.zones[world.zone]) then
+                if (modes.verbose.active) then
+                    windower.add_to_chat(207, "WS Attack Capped - Zone")
+                end
+                if (sets.WS[spell.english]) then
+                    set = set_combine(set, sets.WS[spell.english].Capped)
+                end
+            end
+        end
+        
         -- SATA gear after everything else except enmity adjusters
         if (buffactive["Trick Attack"]) then 
             set = set_combine(set, sets.WS.TA)
@@ -680,7 +707,7 @@ function midcast(spell)
     if (spell.name:split("-")[1] == "Absorb" and sets.Dark) then
         set = set_combine(set, sets.Dark.Absorb)
     end
-    
+
     if (dummy_songs and dummy_songs:contains(spell.name) and sets.FC and sets.FC.Singing) then 
         set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
     end
@@ -994,9 +1021,25 @@ windower.raw_register_event('prerender', function(...)
     if (not player_action and not pet_action) then
         if (modes.auto_dt and modes.auto_dt.low_hp and modes.dt.hp_temp == 'Off' and player.hpp < modes.dt.low_hp) then
             modes.dt.hp_temp = 'Max'
-            gear_up()
+            gearswap.equip_sets('gear_up', nil, nil)
         elseif (modes.dt.hp_temp ~= 'Off') then
             modes.dt.hp_temp = 'Off'
+        end
+    end
+end)
+
+----[[[[ Incoming Packet Handler ]]]]----
+windower.raw_register_event('incoming chunk', function(id, data)
+    local now = os.clock()
+    if (now < last_player_update + player_update_delay) then
+        return
+    end
+    if (id == 0x61) then
+        last_player_update = now
+        local player_info = packets.parse('incoming', data)
+
+        if (player_info['Attack']) then
+            player_attack = player_info['Attack']
         end
     end
 end)
