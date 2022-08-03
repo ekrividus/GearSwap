@@ -468,12 +468,6 @@ function precast(spell)
                 set, sets.WS[spell.english], sets.WS[spell.english][ws_set_names[modes.ws.type]], 
                 sets.WS[spell.name][world.day_element], sets.WS[spell.name][world.weather_element]
             )
-            if (buffactive["Trick Attack"]) then 
-                set = set_combine(set, sets.WS[spell.english].TA)
-            end
-            if (buffactive["Sneak Attack"]) then 
-                set = set_combine(set, sets.WS[spell.english].SA)
-            end
         end
         if (sets.Weapons[modes.weapon_set] and sets.Weapons[modes.weapon_set][spell.name]) then
             set = set_combine(
@@ -507,6 +501,14 @@ function precast(spell)
         end
         if (buffactive["Sneak Attack"]) then 
             set = set_combine(set, sets.WS.SA)
+        end
+        if sets.WS[spell.english] then
+            if (buffactive["Trick Attack"]) then 
+            set = set_combine(set, sets.WS[spell.english].TA)
+            end
+            if (buffactive["Sneak Attack"]) then 
+                set = set_combine(set, sets.WS[spell.english].SA)
+            end
         end
 
         -- Enmity adjustment gear if desired
