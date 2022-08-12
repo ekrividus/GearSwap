@@ -1081,6 +1081,7 @@ windower.raw_register_event('action', function(act)
 
         local word = danger_check(actor.name, danger_type, action.param)
         if (word.set ~= '' or word.turn == true) then
+            windower.add_to_chat(207, "Danger "..danger_type..": "..tostring(word.ability).." equipping "..tostring(word.set).." in "..tostring(word.delay).." second(s) to counter.")
             if (modes.verbose.active) then
                 windower.add_to_chat(207, "Danger "..danger_type..": "..tostring(word.ability).." equipping "..tostring(word.set).." in "..tostring(word.delay).." second(s) to counter.")
             end

@@ -644,6 +644,8 @@ function danger_check(name, type, id)
         cast_time = gearswap.res.spells:with('id', id).cast_time
     elseif (id <= 255) then
         word = gearswap.res.weapon_skills:with('id', id).name
+    elseif (pet.isvalid and name == pet.name) then 
+        word = gearswap.res.job_abilities:with('id', id).name
     else
         word = gearswap.res.monster_abilities:with('id', id).name
     end
@@ -655,7 +657,7 @@ function danger_check(name, type, id)
     for m, v in pairs(danger) do
         if (v.ability == word) then
             if (modes.verbose.active) then
-                windower.add_to_chat(207, v.ability.." == "..word.."? "..(v.ability == word and "Yes" or "No"))
+                windower.add_to_chat(207, name..": "..v.ability.."["..id.."] == "..word.."? "..(v.ability == word and "Yes" or "No"))
             end
             return {set=v.set, delay=cast_time, ability=word, turn=v.turn, hold=v.hold}
         end
