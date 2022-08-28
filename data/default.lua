@@ -328,14 +328,14 @@ function precast(spell)
             return
         end
     end
-    if (spell.name == 'Valiance' or spell.name == 'Vallation') then
-        if (buffactive['Valiance'] or  buffactive['Vallation']) then
-            windower.add_to_chat(207, "Cancelled: "..spell.name..", conflicting buff already active!")
-            cancel_spell()
-            gear_up()
-            return
-        end
-    end
+    -- if (spell.name == 'Valiance' or spell.name == 'Vallation') then
+    --     if (buffactive['Valiance'] or  buffactive['Vallation']) then
+    --         windower.add_to_chat(207, "Cancelled: "..spell.name..", conflicting buff already active!")
+    --         cancel_spell()
+    --         gear_up()
+    --         return
+    --     end
+    -- end
 
     local sets_list = ""
     local set = T{}
@@ -596,6 +596,9 @@ function midcast(spell)
 
     if sets[short_type] then
         set = set_combine(set, sets[short_type])
+        if (modes.verbose.active) then
+            windower.add_to_chat(207, "Sets['"..short_type.."'] - ON")
+        end
         if (spell.target.type == "SELF") then
             if (modes.verbose.active) then
                 windower.add_to_chat(207, "Self Casting Set - sets['"..short_type.."'] - ON")
@@ -605,6 +608,9 @@ function midcast(spell)
     end
     if sets[spell.type] then 
         set = set_combine(set, sets[spell.type])
+        if (modes.verbose.active) then
+            windower.add_to_chat(207, "Sets['"..spell.type.."'] - ON")
+        end
         if (spell.target.type == "SELF") then
             if (modes.verbose.active) then
                 windower.add_to_chat(207, "Self Casting Set - sets['"..spell.type.."'] - ON")
@@ -651,28 +657,24 @@ function midcast(spell)
                 --windower.add_to_chat(207, "Using elemental belt: "..(sets.Elemental.Belts[short_element] and sets.Elemental.Belts[short_element].waist or "no set for belt"))
                 set = set_combine(set, sets.Elemental.Belts[short_element])
             end
+            if (buffactive["futae"]) then
+                set = set_combine(set, sets.Ninjutsu.Futae)
+            end
         end
     end
     
-    if (spell.target.type == "SELF" and short_skill and sets[short_skill] and sets[short_skill].Self) then 
-        if (modes.verbose.active) then
-            windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."'] - ON")
-        end
-        set = set_combine(set, sets[short_skill].Self)
-    end
-
-    if (short_skill and sets[short_skill] and sets[short_skill][short_spell]) then
-        set = set_combine(set, sets[short_skill][short_spell])
-        if (spell.target.type == "SELF") then
+    if (short_skill and sets[short_skill]) then
+        set = set_combine(set, sets[short_skill], sets[short_skill][short_spell])
+        if (spell.target.type == "SELF" and sets[short_skill][short_spell]) then
             if (modes.verbose.active) then
                 windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."']['"..short_spell.."'] - ON")
             end
             set = set_combine(set, sets[short_skill][short_spell].Self)
         end
     end
-    if short_skill and sets[short_skill] and sets[short_skill][spell.name] then
-        set = set_combine(set, sets[short_skill][spell.name])
-        if (spell.target.type == "SELF") then
+    if (short_skill and sets[short_skill]) then
+        set = set_combine(set, sets[short_skill], sets[short_skill][spell.name])
+        if (spell.target.type == "SELF" and sets[short_skill][spell.name]) then
             if (modes.verbose.active) then
                 windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."']['"..spell.name.."'] - ON")
             end
@@ -718,6 +720,11 @@ function midcast(spell)
         set = set_combine(set, sets.MB, sets.Magic.MB)
         if (sets[short_skill]) then
             set = set_combine(set, sets[short_skill].MB)
+        end
+        if (short_skill == "Ninjutsu" and sets.Ninjutsu) then
+            if (buffactive["futae"]) then
+                set = set_combine(set, sets.Ninjutsu.Futae)
+            end
         end
     end
 
@@ -904,9 +911,18 @@ end
 ----[[[[ Buff Changes ]]]]----
 function buff_change(name, gain, buff_details)
     if (name == "Doom") then
-        send_command("input /echo *** DOOM"..(gain and "ED " or " OFF ").."***")
+        windower.send_command("input /party *** DOOM"..(gain and "ED " or " OFF ").."***")
     end
-    
+    local buff_active_set_exists = false
+    if (name and sets.BuffActive) then
+        for k,v in pairs (sets.BuffActive) do
+            if (buffactive[k] and name == k) then
+                buff_active_set_exists = true
+            end
+        end
+        --windower.add_to_chat(207, "Buff: "..name..(gain and " gained" or " lost").." specialized gear? "..(buff_active_set_exists and "yes" or "no"))
+    end
+
     -- Stance changes
     if (gain and stances:with('name', name)) then
         modes.stance = stances:with('name', name)
@@ -940,6 +956,8 @@ function buff_change(name, gain, buff_details)
                 maneuvers_to_apply:clear()
             end
         end
+    elseif (buff_active_set_exists) then
+        gear_up()
     end
 end
 
@@ -1057,8 +1075,8 @@ windower.raw_register_event('action', function(act)
     
     if actor.id == nil then return end
     mob = windower.ffxi.get_mob_by_id(actor.id)
-    if mob == nil then return end
-    actor.name = windower.ffxi.get_mob_by_id(actor.id).name
+    if mob == nil or not mob.valid_target then return end
+    actor.name = mob.name
 
     local ext_param = current_action.param
     local targets = current_action.targets
@@ -1079,7 +1097,7 @@ windower.raw_register_event('action', function(act)
             danger_type = 'spell'
         end
 
-        local word = danger_check(actor.name, danger_type, action.param)
+        local word = danger_check(actor.id, actor.name, danger_type, action.param)
         if (word.set ~= '' or word.turn == true) then
             windower.add_to_chat(207, "Danger "..danger_type..": "..tostring(word.ability).." equipping "..tostring(word.set).." in "..tostring(word.delay).." second(s) to counter.")
             if (modes.verbose.active) then
