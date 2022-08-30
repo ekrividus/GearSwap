@@ -1101,12 +1101,14 @@ windower.raw_register_event('action', function(act)
 
     if is_mob and S{7,8}:contains(current_action.category) and ext_param ~= 28787 then
         local action = targets[1].actions[1]
-        if current_action.category == 8 then 
+        if current_action.category == 7 then
+            danger_type = 'ability'
+        elseif current_action.category == 8 then 
             danger_type = 'spell'
         end
 
         local word = danger_check(actor.id, actor.name, danger_type, action.param)
-        if (word.set ~= '' or word.turn == true) then
+        if (word and (word.set ~= '' or word.turn == true)) then
             if (modes.verbose.active) then
                 windower.add_to_chat(207, "Danger "..danger_type..": "..tostring(word.ability).." equipping "..tostring(word.set).." in "..tostring(word.delay).." second(s) to counter.")
             end

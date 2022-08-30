@@ -640,8 +640,19 @@ function danger_check(mob_id, mob_name, type, id)
     local danger = danger or T{}
     local mob = windower.ffxi.get_mob_by_id(mob_id)
 
+    if not mob then 
+        return
+    end
+
     if (modes.verbose.active) then
-        windower.add_to_chat(207, mob_name.."["..mob_id.."] - Action Type: "..type.." Action ID: "..id)
+        windower.add_to_chat(207, 
+            mob_name.." ["..mob_id.."] - Action Type: "..type.." Action ID: "..id..
+                " Valid T? "..(mob.valid_target and "yes" or "no").." S_Type: "..mob.spawn_type
+        )
+    end
+
+    if mob.spawn_type == 2 then
+        return
     end
 
     if (type == 'spell') then
