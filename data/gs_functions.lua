@@ -640,6 +640,10 @@ function danger_check(mob_id, mob_name, type, id)
     local danger = danger or T{}
     local mob = windower.ffxi.get_mob_by_id(mob_id)
 
+    if (modes.verbose.active) then
+        windower.add_to_chat(207, mob_name.."["..mob_id.."] - Action Type: "..type.." Action ID: "..id)
+    end
+
     if (type == 'spell') then
         word = gearswap.res.spells:with('id', id).name
         cast_time = gearswap.res.spells:with('id', id).cast_time
@@ -658,7 +662,7 @@ function danger_check(mob_id, mob_name, type, id)
     for m, v in pairs(danger) do
         if (v.ability == word) then
             if (modes.verbose.active) then
-                windower.add_to_chat(207, name..": "..v.ability.."["..id.."] == "..word.."? "..(v.ability == word and "Yes" or "No"))
+                windower.add_to_chat(207, mob_name..": "..v.ability.."["..id.."] == "..word.."? "..(v.ability == word and "Yes" or "No"))
             end
             return {set=v.set, delay=cast_time, ability=word, turn=v.turn, hold=v.hold}
         end

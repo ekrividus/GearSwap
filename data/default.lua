@@ -645,24 +645,6 @@ function midcast(spell)
         end
     end
 
-    if (short_skill == "Ninjutsu" and sets.Ninjutsu) then
-        if (ninjutsu_enhancing:contains(short_spell)) then
-            set = set_combine(set, sets.Ninjutsu.Enhancing)
-        elseif (ninjutsu_enfeebling:contains(short_spell)) then
-            set = set_combine(set, sets.Ninjutsu.Enfeebling)
-        elseif (ninjutsu_elemental:contains(short_spell)) then
-            set = set_combine(set, sets.Ninjutsu.Elemental)
-            --windower.add_to_chat(207, short_element.." == "..world.weather_element.." ? "..spell.element)
-            if (short_element == world.weather_element and sets.Elemental and sets.Elemental.Belts) then
-                --windower.add_to_chat(207, "Using elemental belt: "..(sets.Elemental.Belts[short_element] and sets.Elemental.Belts[short_element].waist or "no set for belt"))
-                set = set_combine(set, sets.Elemental.Belts[short_element])
-            end
-            if (buffactive["futae"]) then
-                set = set_combine(set, sets.Ninjutsu.Futae)
-            end
-        end
-    end
-    
     if (short_skill and sets[short_skill]) then
         set = set_combine(set, sets[short_skill], sets[short_skill][short_spell])
         if (spell.target.type == "SELF" and sets[short_skill][short_spell]) then
@@ -716,14 +698,40 @@ function midcast(spell)
         set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
     end
 
+    if (short_skill == "Ninjutsu" and sets.Ninjutsu) then
+        if (ninjutsu_enhancing:contains(short_spell)) then
+            set = set_combine(set, sets.Ninjutsu.Enhancing)
+        elseif (ninjutsu_enfeebling:contains(short_spell)) then
+            set = set_combine(set, sets.Ninjutsu.Enfeebling)
+        elseif (ninjutsu_elemental:contains(short_spell)) then
+            set = set_combine(set, sets.Ninjutsu.Elemental)
+            --windower.add_to_chat(207, short_element.." == "..world.weather_element.." ? "..spell.element)
+            if (short_element == world.weather_element and sets.Elemental and sets.Elemental.Belts) then
+                --windower.add_to_chat(207, "Using elemental belt: "..(sets.Elemental.Belts[short_element] and sets.Elemental.Belts[short_element].waist or "no set for belt"))
+                set = set_combine(set, sets.Elemental.Belts[short_element])
+            end
+            if (buffactive["futae"]) then
+                set = set_combine(set, sets.Ninjutsu.Futae)
+            end
+        end
+    end
+    
     if (modes.bursting.active) then
         set = set_combine(set, sets.MB, sets.Magic.MB)
         if (sets[short_skill]) then
             set = set_combine(set, sets[short_skill].MB)
         end
         if (short_skill == "Ninjutsu" and sets.Ninjutsu) then
-            if (buffactive["futae"]) then
-                set = set_combine(set, sets.Ninjutsu.Futae)
+            if (ninjutsu_elemental:contains(short_spell)) then
+                set = set_combine(set, sets.Ninjutsu.Elemental)
+                --windower.add_to_chat(207, short_element.." == "..world.weather_element.." ? "..spell.element)
+                if (short_element == world.weather_element and sets.Elemental and sets.Elemental.Belts) then
+                    --windower.add_to_chat(207, "Using elemental belt: "..(sets.Elemental.Belts[short_element] and sets.Elemental.Belts[short_element].waist or "no set for belt"))
+                    set = set_combine(set, sets.Elemental.Belts[short_element])
+                end
+                if (buffactive["futae"]) then
+                    set = set_combine(set, sets.Ninjutsu.Futae)
+                end
             end
         end
     end
@@ -1099,7 +1107,6 @@ windower.raw_register_event('action', function(act)
 
         local word = danger_check(actor.id, actor.name, danger_type, action.param)
         if (word.set ~= '' or word.turn == true) then
-            windower.add_to_chat(207, "Danger "..danger_type..": "..tostring(word.ability).." equipping "..tostring(word.set).." in "..tostring(word.delay).." second(s) to counter.")
             if (modes.verbose.active) then
                 windower.add_to_chat(207, "Danger "..danger_type..": "..tostring(word.ability).." equipping "..tostring(word.set).." in "..tostring(word.delay).." second(s) to counter.")
             end
