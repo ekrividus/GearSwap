@@ -634,17 +634,18 @@ function danger_finish(mob, turn)
     gear_up()
 end
 
-function danger_check(name, type, id)
+function danger_check(mob_id, mob_name, type, id)
     local word = ''
     local cast_time = 0
     local danger = danger or T{}
-    
+    local mob = windower.ffxi.get_mob_by_id(mob_id)
+
     if (type == 'spell') then
         word = gearswap.res.spells:with('id', id).name
         cast_time = gearswap.res.spells:with('id', id).cast_time
     elseif (id <= 255) then
         word = gearswap.res.weapon_skills:with('id', id).name
-    elseif (pet.isvalid and name == pet.name) then 
+    elseif (pet.isvalid and mob_name == pet.name) then 
         word = gearswap.res.job_abilities:with('id', id).name
     else
         word = gearswap.res.monster_abilities:with('id', id).name
