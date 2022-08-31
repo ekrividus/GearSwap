@@ -23,9 +23,9 @@ sets.Weapons = {}
 
 sets.Player = {}
 sets.Player.Idle = {}
-sets.Player.Idle.MoveSpeed = {}
-sets.Player.Idle.Regen = {}
-sets.Player.Idle.Refresh = {}
+sets.Player.Idle.Mvt = {}
+sets.Player.Idle.Reg = {}
+sets.Player.Idle.Ref = {}
 sets.Player.Idle.Town = {}
 
 sets.Player.Engaged = {}
