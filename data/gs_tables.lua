@@ -103,7 +103,7 @@ no_shoot_gear = T{
     "Automat. Oil +3",
 }
 
-idle_set_names      = T{Std="Std", Mvt="Mvt", Ref="Ref", Reg="Reg", Town="Twn"}
+idle_set_names      = T{Std="Std", Mvt="Mvt", Ref="Ref", Reg="Reg"}
 melee_set_names     = T{Min="MinAcc", Mid="MidAcc", Max="MaxAcc"}
 ranged_set_names    = T{Min="MinAcc", Mid="MidAcc", Max="MaxAcc", Off="Off"}
 magic_set_names     = T{Min="MinAcc", Mid="MidAcc", Max="MaxAcc"}
@@ -425,7 +425,7 @@ enspells = T{
 }
 
 ----[[[[ Bard Dummy Songs ]]]]----
-dummy_songs = T{"Army's Paeon", "Army's Paeon II", }
+dummy_songs = T{"Goblin Gavotte", "Army's Paeon", "Army's Paeon II", }
 
 ----[[[[ Cure Spell and Waltz Heal Amounts ]]]]----
 cure_amounts = T{ 70, 150, 300, 600, 800, 1000 }

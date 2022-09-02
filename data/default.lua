@@ -75,17 +75,30 @@ function gear_up(spell)
         return
     end
 
-    local set = T(set_combine(set, sets.Player.Idle, sets.Player.Idle[modes.idle.type], sets.Current))
     local sets_list = "---- Gear Up ---- \nPlayer Status: "..player.status.."\n"
     if (pet.isvalid) then
         sets_list = sets_list.."Pet Status: "..tostring(pet.status).."\n"
     end
+    sets_list = sets_list.."\nGear sets: "
 
+    -- Default to Idle gear based on selected type, this will be overriden when engaged
+    local set = T(set_combine(set, sets.Player.Idle, sets.Player.Idle[modes.idle.type], sets.Current))
+    -- We're in Town lets put on something fun
+    if (in_town()) then
+        sets_list = sets_list..(' ***Town*** ')
+        set = set_combine(set, sets.Player.Idle.Twn, sets.Player.Idle.Town)
+        -- TODO: Add city specific gear automation here:
+    end
+
+    -- Night based move speed gear
+    if (modes.idle.type == 'Mvt' and sets.Player.Idle[modes.idle.type] and (world.time >= 17*60 or world.time < 7*60)) then -- Dusk to Dawn time.
+        set = set_combine(set, sets.Player.Idle[modes.idle.type].Night)
+    end        
+    
     local dw_in_use = false
     if (sets.Weapons[modes.weapons.set]) then
         set = set_combine(set, sets.Weapons[modes.weapons.set])
     end
-    sets_list = sets_list.."\nGear sets: "
 
 -- Add weapons to set
     if (weapons_changed or (modes.keep_tp.active == false and modes.keep_tp.amount and player.tp < modes.keep_tp.amount)) then
@@ -231,12 +244,6 @@ end
         set = set_combine(set, sets.CP)
     end
 
--- We're in Town lets put on something fun
-    if (in_town()) then
-        sets_list = sets_list..(' ***Town*** ')
-        set = set_combine(set, sets.Player.Idle.Town)
-    end
-
     if (modes.verbose.active) then
         windower.add_to_chat(207, sets_list)
     end
@@ -357,10 +364,25 @@ function precast(spell)
         windower.add_to_chat(207, "---- Precast\n Spell: "..tostring(short_spell).." Type: "..tostring(spell.type).." Skill: "..tostring(short_skill).." Ele: "..tostring(short_element))
     end
     
+    if (short_spell == "Cure" and adjust_cure(spell)) then 
+        cancel_spell()
+        return
+    end
+
+    if (short_spell == "Curing" and adjust_cure(spell)) then 
+        cancel_spell()
+        return
+    end
+
+    if (short_spell == "Utsusemi" and adjust_utsusemi(spell.name)) then
+        cancel_spell()
+        return
+    end
+
     if spell.cast_time then
         set = set_combine(set, sets.FC)
         if (sets.FC and sets.FC[short_skill]) then
-            set = set_combine(set, sets.FC[short_skill])
+            set = set_combine(set, sets.FC[short_skill], sets.FC[short_skill][spell.name])
         end
         if (sets.FC and sets.FC[short_element]) then
             set = set_combine(set, sets.FC[short_element])
@@ -369,12 +391,13 @@ function precast(spell)
             set = set_combine(set, sets.FC[short_spell])
         end
         if (sets.FC and sets.FC[short_skill] and sets.FC[short_skill][short_spell]) then
-            set = set_combine(set, sets.FC[short_skill][short_spell])
+            set = set_combine(set, sets.FC[short_skill][short_spell], sets.FC[short_skill][spell.name])
         end
         if (sets.FC and sets.FC[spell.english]) then
             set = set_combine(set, sets[spell.english])
         end
     end
+
 
     if spell.english == 'Ranged' then
         if (spell.english == 'Ranged' and ranged_set_names[modes.ranged.type] == 'Off') then
@@ -540,6 +563,16 @@ function precast(spell)
     if (sets.JA[spell.english]) then
         set = set_combine(set, sets.JA[spell.english])
     end
+
+    --[[ NiTro'd Songs ]]--
+    if (short_skill == "Singing" and buffactive["Nightingale"]) then
+        set = set_combine(set, sets[short_spell])
+        if (sets[short_skill]) then
+            set = set_combine(set, sets[short_skill], sets[short_skill][short_spell], sets[short_spell], sets[short_skill][spell.name])
+        end
+        set = set_combine(set, sets[spell.name])
+    end
+
     if (dummy_songs and dummy_songs:contains(spell.name) and sets.FC and sets.FC.Singing) then 
         set = set_combine(set, sets.FC.Singing, sets.FC.Singing.Dummy)
     end
@@ -582,8 +615,8 @@ function midcast(spell)
     local set = {}
 
     if (modes.verbose.active) then
-        windower.add_to_chat(207, "---- Midcast\nSpell: "..short_spell.." Type: "..short_type.." Skill: "..(short_skill and short_skill or "N/A"))
-        windower.add_to_chat(207, "---- Day: "..world.day_element.." Weather: "..world.weather_element)
+        windower.add_to_chat(207, "---- Midcast\nSpell: "..short_spell.." Type: "..short_type.." Skill: "..(short_skill and short_skill or "N/A")..
+        "\n---- Day: "..world.day_element.." Weather: "..world.weather_element)
     end
 
     if short_skill and short_skill == "Singing" then
@@ -593,6 +626,18 @@ function midcast(spell)
     elseif short_skill and short_skill == "Ninjutsu" then
         short_spell = spell.english:split(":")[1]
     end
+
+    if (spell == "Utsusemi: Ichi" or spell == "Utsusemi: Ni") then
+		if (buffactive['Copy Image']) then
+			windower.send_command('cancel 66')
+		elseif (buffactive['Copy Image (2)']) then 
+			windower.send_command('cancel 444')
+		elseif (buffactive['Copy Image (3)']) then
+			windower.send_command('cancel 445')
+		elseif (buffactive['Copy Image (4+)']) then
+			windower.send_command('cancel 446')
+		end
+	end
 
     if sets[short_type] then
         set = set_combine(set, sets[short_type])
@@ -645,24 +690,6 @@ function midcast(spell)
         end
     end
 
-    if (short_skill and sets[short_skill]) then
-        set = set_combine(set, sets[short_skill], sets[short_skill][short_spell])
-        if (spell.target.type == "SELF" and sets[short_skill][short_spell]) then
-            if (modes.verbose.active) then
-                windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."']['"..short_spell.."'] - ON")
-            end
-            set = set_combine(set, sets[short_skill][short_spell].Self)
-        end
-    end
-    if (short_skill and sets[short_skill]) then
-        set = set_combine(set, sets[short_skill], sets[short_skill][spell.name])
-        if (spell.target.type == "SELF" and sets[short_skill][spell.name]) then
-            if (modes.verbose.active) then
-                windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."']['"..spell.name.."'] - ON")
-            end
-            set = set_combine(set, sets[short_skill][spell.name].Self)
-        end
-    end
     if sets[short_spell] then 
         set = set_combine(set, sets[short_spell])
         if (spell.target.type == "SELF") then
@@ -670,6 +697,15 @@ function midcast(spell)
                 windower.add_to_chat(207, "Self Casting Set - sets['"..short_spell.."'] - ON")
             end
             set = set_combine(set, sets[short_spell].Self)
+        end
+    end
+    if (short_skill and sets[short_skill]) then
+        set = set_combine(set, sets[short_skill], sets[short_skill][short_spell], sets[short_skill][spell.name])
+        if (spell.target.type == "SELF" and sets[short_skill][short_spell]) then
+            if (modes.verbose.active) then
+                windower.add_to_chat(207, "Self Casting Set - sets['"..short_skill.."']['"..short_spell.."'] - ON")
+            end
+            set = set_combine(set, sets[short_skill][short_spell].Self)
         end
     end
     if sets[spell.name] then

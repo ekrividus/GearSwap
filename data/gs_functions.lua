@@ -793,37 +793,35 @@ function adjust_cure(spell)
     end
 
     if (recasts[gearswap.res.spells:with("name", spell.name).id] <= 0 and (spell_tier == 1 or missingHP >= cure_amounts[spell_tier] * (1 + (settings.job.cure_potency/100)))) then
-        return
+        return false
     end
 
     if (recasts[6] == 0 and missingHP >= cure_amounts[6] * (1 + (settings.job.cure_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \""..spell_short.." "..spell_tiers[6].."\" "..spell.target.id)
-        return
+        return true
     elseif (recasts[5] == 0 and missingHP >= cure_amounts[5] * (1 + (settings.job.cure_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \""..spell_short.." "..spell_tiers[5].."\" "..spell.target.id)
-        return
+        return true
     elseif (recasts[4] == 0 and missingHP >= cure_amounts[4] * (1 + (settings.job.cure_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \""..spell_short.." "..spell_tiers[4].."\" "..spell.target.id)
-        return
+        return true
     elseif (recasts[3] == 0 and missingHP >= cure_amounts[3] * (1 + (settings.job.cure_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \""..spell_short.." "..spell_tiers[3].."\" "..spell.target.id)
-        return
+        return true
     elseif (recasts[2] == 0 and missingHP >= cure_amounts[2] * (1 + (settings.job.cure_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \""..spell_short.." "..spell_tiers[2].."\" "..spell.target.id)
-        return
+        return true
     elseif (recasts[1] == 0) then -- and missingHP >= cure_amounts[1] * (1 + (settings.job.cure_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \""..spell_short.."\" "..spell.target.id)
-        return
-    else
-        cancel_spell()
-        return
+        return true
     end
+    return false
 end
 
 --[[
@@ -848,34 +846,62 @@ function adjust_waltz(spell)
     end
 
     if (recasts[gearswap.res.job_abilities:with("name", spell.name).id] <= 0 and (spell_tier == 1  or missingHP >= waltz_amounts[spell_tier] * (1 + (settings.job.waltz_potency/100)))) then
-        return
+        return false
     end
 
     if (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz V")] == 0 and missingHP >= waltz_amounts[5] * (1 + (settings.job.waltz_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[5].."\" "..spell.target.name)
-        return
+        return true
     elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz IV")] == 0 and missingHP >= waltz_amounts[4] * (1 + (settings.job.waltz_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[4].."\" "..spell.target.name)
-        return
+        return true
     elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz III")] == 0 and missingHP >= waltz_amounts[3] * (1 + (settings.job.waltz_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[3].."\" "..spell.target.name)
-        return
+        return true
     elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz II")] == 0 and missingHP >= waltz_amounts[2] * (1 + (settings.job.waltz_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \"".."Curing Waltz "..spell_tiers[2].."\" "..spell.target.name)
-        return
+        return true
     elseif (recasts[gearswap.res.job_abilities:with("name", "Curing Waltz").id] == 0 and missingHP >= waltz_amounts[1] * (1 + (settings.job.waltz_potency/100))) then
         cancel_spell()
         windower.chat.input("/ma \"".."Curing Waltz\" "..spell.target.name)
-        return
+        return true
     else
         cancel_spell()
         windower.chat.input("/ma \"Curing Waltz\" "..spell.target.name)
-        return
+        return true
     end
+    return false
+end
+
+--[[ Handle Utsusemi shadow removal and spell changes ]]--
+function adjust_utsusemi(spell) 
+    local recasts = windower.ffxi.get_spell_recasts()
+
+    if (buffactive['Copy Image (4+)']) then
+        cancel_spell()
+        return true
+    elseif (spell == "Utsusemi: Ichi" and buffactive['Copy Image (3)']) then
+        cancel_spell()
+        return true
+    end
+
+    if (recasts[gearswap.res.spells:with('name', spell).id] and recasts[gearswap.res.spells:with('name', spell).id] > 0) then
+        windower.add_to_chat(207, "On recast - "..spell.." stepping down")
+        if (spell == 'Utsusemi: San') then
+            windower.chat.input('/ma "Utsusemi: Ni" <me>')
+            return true
+        end
+        if (spell == 'Utsusemi: Ni') then
+            windower.chat.input('/ma "Utsusemi: Ichi" <me>')
+            return true
+        end
+    end
+
+    return false
 end
 
 --[[
