@@ -11,6 +11,9 @@ modes.magic.type = "Min"
 modes.weapons.set = "Empty"
 
 --[[ This is an empty slate to start building out all gear sets for any job ]]--
+-- A handy spot to hold all your capes
+sets.Capes = {}
+
 -- Set a temporary set for aftercast gear_up, 
 -- set to currently equipped gear with //gs c cur
 -- This will override normal aftercast gear sets except DT

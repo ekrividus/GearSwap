@@ -792,7 +792,7 @@ function adjust_cure(spell)
         spell_tier = 1
     end
 
-    if (recasts[gearswap.res.spells:with("name", spell.name).id] <= 0 and (spell_tier == 1 or missingHP >= cure_amounts[spell_tier] * (1 + (settings.job.cure_potency/100)))) then
+    if (gearswap.res.spells:with("name", spell.name) and recasts[gearswap.res.spells:with("name", spell.name).id] <= 0 and (spell_tier == 1 or missingHP >= cure_amounts[spell_tier] * (1 + (settings.job.cure_potency/100)))) then
         return false
     end
 

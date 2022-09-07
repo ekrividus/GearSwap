@@ -248,8 +248,9 @@ end
         windower.add_to_chat(207, sets_list)
     end
 
-
-    equip(set)
+    if (player.status_id < 2) then
+        equip(set)
+    end
     return set
 end
 
@@ -369,7 +370,7 @@ function precast(spell)
         return
     end
 
-    if (short_spell == "Curing" and adjust_cure(spell)) then 
+    if (short_spell == "Curing" and adjust_waltz(spell)) then 
         cancel_spell()
         return
     end
