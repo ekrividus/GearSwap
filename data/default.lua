@@ -719,6 +719,10 @@ function midcast(spell)
         end
     end
 
+    if (naspells and (naspells:contains(short_spell) or naspells:contains(spell.name)) and sets.Healing) then
+        set = set_combine(set, sets.Healing.Naspell)
+    end
+
     if (barspells and (barspells:contains(short_spell) or barspells:contains(spell.name)) and sets.Enhancing) then
         set = set_combine(set, sets.Enhancing.Barspell)
     end

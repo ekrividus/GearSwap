@@ -276,6 +276,9 @@ stances = T{
     [9]={name="Reprisal", cmd="/ma \"Reprisal\" <me>"},
 }
 
+----[[[[ Enmity Generators ]]]]----
+enmity_generators = T{"Provoke", "Flash", "Stun", "Kurayami", "Hojo", "Dokumori", "Jubaku", "Aisha", "Yurin"}
+
 ----[[[[ Pet Engagement Commands ]]]]----
 pet_engage_commands = T{ BST="Fight", SMN="Assault", PUP="Deploy", }
 
@@ -345,9 +348,6 @@ ninjutsu_enhancing = T{"Tonko", "Utsusemi", "Monomi", "Myoshu", "Migawari", "Gek
 ninjutsu_enfeebling = T{"Kurayami", "Hojo", "Dokumori", "Jubaku", "Aisha", "Yurin"}
 ninjutsu_elemental = T{"Katon", "Suiton", "Raiton", "Doton", "Huton", "Hyoton"}
 
-----[[[[ Enmity Generators ]]]]----
-enmity_generators = T{"Provoke", "Flash", "Stun", "Kurayami", "Hojo", "Dokumori", "Jubaku", "Aisha", "Yurin"}
-
 ----[[[[ Blue Magic Tables ]]]]----
 blue_physical = T{
     "Foot Kick", "Sprout Smack", "Wild Oats", "Power Attack", "Battle Dance",
@@ -411,7 +411,12 @@ blue_enfeebling = T{
     "Blistering Roar",
 }
 
-----[[[[ Enhancing Magic Tables ]]]]----
+----[[[[ Healing and Enhancing Magic Tables ]]]]----
+naspells = T{
+    "Blindna", "Cursna", "Erase", "Esuna", "Paralyna", 
+    "Poisona", "Sacrifice", "Silena", "Stona", "Viruna",
+}
+
 barspells = T{
     "Barfire", "Barfira",
     "Barblizzard", "Barblizzara",
