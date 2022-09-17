@@ -273,7 +273,7 @@ stances = T{
     [6]={name="Afflatus Misery", cmd="/ja \"Afflatus Misery\" <me>"},
     [7]={name="Afflatus Solace", cmd="/ja \"Afflatus Solace\" <me>"},
     [8]={name="Majesty", cmd="/ja \"Majesty\" <me>"},
-    [9]={name="Reprisal", cmd="/ma \"Reprisal\" <me>"},
+    --[9]={name="Reprisal", cmd="/ma \"Reprisal\" <me>"},
 }
 
 ----[[[[ Enmity Generators ]]]]----

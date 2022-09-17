@@ -1024,7 +1024,12 @@ windower.raw_register_event('prerender', function(...)
             last_stance_check_time = time
             if (modes.stance) then
                 if (stances:with('name', modes.stance.name)) then
-                    local d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name).recast_id]
+                    local d = nil
+                    if (windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name)]) then
+                        d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name).recast_id]
+                    elseif (windower.ffxi.get_ability_recasts()[gearswap.res.spells:with('name', modes.stance.name)]) then
+                        d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name).recast_id]
+                    end
                     if (not buffactive[modes.stance.name] and d and d == 0) then
                         apply_stance(modes.stance)
                     end
