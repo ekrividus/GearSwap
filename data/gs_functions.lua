@@ -548,9 +548,31 @@ function calc_flurry()
 end
 
 ----[[[[ Maneuver Maintenance ]]]]----
-function apply_maneuver(manuever)
-    if (manuever == nil) then
-        return
+function maneuver_maintenance()
+    if (not is_disabled()) then
+        if (buffactive['Overload']) then
+            return
+        end
+
+        if (modes.pet.auto_maneuvers and maneuvers_to_apply and maneuvers_to_apply:length() > 0) then
+            --windower.add_to_chat(17, "Maneuvers: "..tostring(maneuvers:length()))
+            if (not pet.isvalid or player.status_id >= 2 or cities:contains(world.area)) then
+                maneuvers:clear()
+                maneuvers_to_apply:clear()
+            elseif (maneuvers:length() >= 3) then
+                maneuvers_to_apply:clear()
+            elseif (pet.isvalid and pet.name and player.status_id <= 1) then
+                local d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('en', maneuvers_to_apply[1]).recast_id]
+                if (modes.verbose.active) then
+                    windower.add_to_chat(17, "Reapplying "..maneuvers_to_apply[1].."\nRecasts: ")
+                end
+                if (d and d <= 0) then
+                    send_command('input /ja "'..maneuvers_to_apply[1]..'" <me>')
+                elseif (modes.verbose.active) then
+                    windower.add_to_chat(17, "Waiting on recast "..maneuvers_to_apply[1]..(d and d or "???"))
+                end    
+            end
+        end
     end
 end
 
@@ -565,6 +587,31 @@ function apply_stance(stance)
         return
     elseif (player.status_id <= 1 and not is_disabled() and not in_town()) then
         windower.send_command("input "..stance.cmd)
+    end
+end
+
+function stance_maintenance()
+    if (not is_disabled() and not cities:contains(world.area)) then
+        if (modes.stance and modes.stance.name) then
+            if (stances:with('name', modes.stance.name)) then
+                local d = 999
+                if (gearswap.res.job_abilities:with('en', modes.stance.name)) then
+                    d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('en', modes.stance.name).recast_id]
+                elseif (gearswap.res.spells:with('en', modes.stance.name)) then
+                    d = windower.ffxi.get_spell_recasts()[gearswap.res.job_abilities:with('en', modes.stance.name).recast_id]
+                end
+                
+                if (modes.verbose.active) then
+                    windower.add_to_chat(207, 'stance: '..modes.stance.name..' stances:with(name)? '..(stances:with('name', modes.stance.name) and "Yes " or "No ").." Buff Active? "..(buffactive[modes.stance.name] and "Yes " or "No "..' Recast: '..d))
+                end
+                if (not buffactive[modes.stance.name] and d and d <= 0) then
+                    if (modes.verbose.active) then
+                        windower.add_to_chat(208, 'stance wore, reapplying: '..modes.stance.name..' Command: '..modes.stance.cmd)
+                    end
+                    apply_stance(modes.stance)
+                end
+            end
+        end
     end
 end
 

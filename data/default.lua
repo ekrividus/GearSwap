@@ -34,6 +34,10 @@ maneuver_check_delay = 3
 maneuvers = Q{}
 maneuvers_to_apply = Q{}
 
+last_rune_check_time = 0
+runes = Q{}
+runes_to_apply = Q{}
+
 last_potion_check_time = 0
 potion_check_delay = 1
 
@@ -139,14 +143,11 @@ function gear_up(spell)
 
 -- Merge pet set by pet state and priority
     if (pet.isvalid) then
-        if (player.status == 'Idle' or modes.pet.priority == 'Pet') then
-            sets_list = sets_list.."Pet-"..modes.pet.type
-            set = set_combine(set, sets.Pet[pet.status])
-            if (pet.status == 'Engaged') then
-                set = set_combine(set, sets.Pet[modes.pet.type])
-            end
+        if (player.status == 'Idle' or modes.pet.priority == 'Pet' and sets.Pet and sets.Pet[modes.pet.type]) then
+            sets_list = sets_list.."Pet-"..modes.pet.type.."-"..pet.status.." "
+            set = set_combine(set, sets.Pet[modes.pet.type], sets.Pet[modes.pet.type][pet.status])
         elseif (player.status == 'Engaged' and modes.pet.priority == 'Hybrid') then
-            sets_list = sets_list.."Hybrid-"..tostring(melee_set_names[modes.melee.type])
+            sets_list = sets_list.."Hybrid-"..tostring(melee_set_names[modes.melee.type]).."-"..pet.status.." "
             set = set_combine(set, sets.Hybrid[melee_set_names[modes.melee.type]])
         end
     end
@@ -830,7 +831,7 @@ end
 
 ----[[[[ Pet Midcast ]]]]----
 function pet_midcast(spell)
-    -- windower.add_to_chat(207, "Pet Midcast")
+    windower.add_to_chat(207, "Pet Midcast: ["..pet.name.."] "..spell.name.." "..spell.type.." "..spell.skill)
 
     pet_action = true
     -- Don't change out of BloodPact Gear between Bloodpacts during Astral Conduit
@@ -876,8 +877,11 @@ function pet_midcast(spell)
             end
         end            
         bstr = bstr.."Bloodpact Rage - "..spell.name
-    elseif false then -- Puppetmaster auto is casting a spell
-        set = set_combine(set, sets.Pet[modes.pet.type].midcast)
+    elseif player.main_job == "PUP" and T{"WhiteMagic","BlackMagic"}:contains(spell.skill) then -- Puppetmaster auto is casting a spell
+        set = set_combine(set, sets.Pet[modes.pet.type], sets.Pet[modes.pet.type].midcast)
+        if (spell.skill == "Healing Magic" and sets.Pet.Healer) then
+            set = set_combine(set, sets.Pet.Healer, sets.Pet.Healer.midcast)
+        end
     end
 
     equip(set)
@@ -1018,61 +1022,27 @@ windower.raw_register_event('prerender', function(...)
     if (time < last_update + update_freq) then return end
     last_update = time
 
-    -- If we had a stance set and it has worn off lets get it back up
-    if (time > last_stance_check_time + stance_check_delay) then
-        if (not is_disabled() and not cities:contains(world.area)) then
-            last_stance_check_time = time
-            if (modes.stance) then
-                if (stances:with('name', modes.stance.name)) then
-                    local d = nil
-                    if (windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name)]) then
-                        d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name).recast_id]
-                    elseif (windower.ffxi.get_ability_recasts()[gearswap.res.spells:with('name', modes.stance.name)]) then
-                        d = windower.ffxi.get_ability_recasts()[gearswap.res.job_abilities:with('name', modes.stance.name).recast_id]
-                    end
-                    if (not buffactive[modes.stance.name] and d and d == 0) then
-                        apply_stance(modes.stance)
-                    end
-                end
-            end
-        end
+    -- Auto engage pets if they're not doing anything while we're engaged
+    if (pet_engage_commands:contains(player.main_job) and modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
+        send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
     end
 
-    -- If we have 1 or more maneuvers to apply then go ahead and apply one
+    -- If we had a stance set and it has worn off lets get it back up
+    if (time > last_stance_check_time + stance_check_delay) then
+        last_stance_check_time = time
+        stance_maintenance()
+    end
+
+    -- PUP maneuvers to apply then go ahead and apply one
     if (time > last_maneuver_check_time + maneuver_check_delay) then
-        if (not is_disabled()) then
-            last_maneuver_check_time = time
-            if (buffactive['Overload']) then
-                return
-            end
+        last_maneuver_check_time = time
+        maneuver_maintenance()
+    end
 
-            if (pet_engage_commands:contains(player.main_job) and modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
-                send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
-            end
-        
-            if (modes.pet.auto_maneuvers and maneuvers_to_apply and maneuvers_to_apply:length() > 0) then
-                --windower.add_to_chat(17, "Maneuvers: "..tostring(maneuvers:length()))
-                if (not pet.isvalid or player.status_id >= 2 or cities:contains(world.area)) then
-                    maneuvers:clear()
-                    maneuvers_to_apply:clear()
-                elseif (maneuvers:length() >= 3) then
-                    maneuvers_to_apply:clear()
-                elseif (pet.isvalid and pet.name and player.status_id <= 1) then
-                    if (modes.verbose.active) then
-                        windower.add_to_chat(17, "Reapplying "..maneuvers_to_apply[1])
-                    end
-                    local d = windower.ffxi.get_ability_recasts()[210]
-                    if (d and d > 0) then
-                        if (modes.verbose.active) then
-                            windower.add_to_chat(17, "Waiting on recast "..maneuvers_to_apply[1])
-                        end
-                        return
-                    end
-
-                    send_command('input /ja "'..maneuvers_to_apply[1]..'" <me>')
-                end
-            end
-        end
+    -- Rune Maintenance if Run/ or /Run
+    if (time > last_rune_check_time) then
+        last_rune_check_time = time
+        --rune_maintenance()
     end
 
     -- Auto Item Use
