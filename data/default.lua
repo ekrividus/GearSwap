@@ -143,9 +143,13 @@ function gear_up(spell)
 
 -- Merge pet set by pet state and priority
     if (pet.isvalid) then
-        if (player.status == 'Idle' or modes.pet.priority == 'Pet' and sets.Pet and sets.Pet[modes.pet.type]) then
+        if (player.status == 'Idle' or modes.pet.priority == 'Pet' and sets.Pet) then
             sets_list = sets_list.."Pet-"..modes.pet.type.."-"..pet.status.." "
-            set = set_combine(set, sets.Pet[modes.pet.type], sets.Pet[modes.pet.type][pet.status])
+            set = set_combine(set, sets.Pet[pet.status])
+
+            if (sets.Pet and sets.Pet[modes.pet.type]) then
+                set = set_combine(set, sets.Pet[modes.pet.type], sets.Pet[modes.pet.type][pet.status])
+            end
         elseif (player.status == 'Engaged' and modes.pet.priority == 'Hybrid') then
             sets_list = sets_list.."Hybrid-"..tostring(melee_set_names[modes.melee.type]).."-"..pet.status.." "
             set = set_combine(set, sets.Hybrid[melee_set_names[modes.melee.type]])
@@ -831,7 +835,7 @@ end
 
 ----[[[[ Pet Midcast ]]]]----
 function pet_midcast(spell)
-    windower.add_to_chat(207, "Pet Midcast: ["..pet.name.."] "..spell.name.." "..spell.type.." "..spell.skill)
+    --windower.add_to_chat(207, "Pet Midcast: ["..pet.name.."] "..spell.name.." "..spell.type.." "..spell.skill)
 
     pet_action = true
     -- Don't change out of BloodPact Gear between Bloodpacts during Astral Conduit
@@ -1047,7 +1051,7 @@ windower.raw_register_event('prerender', function(...)
 
     -- Auto Item Use
     if (last_potion_check_time + potion_check_delay) then
-        if (player.status_id <= 1 and not is_disabled()) then
+        if (player.status_id and player.status_id <= 1 and not is_disabled()) then
             last_potion_check_time = time
             if (buffactive['Doom'] and modes.potions and modes.potions.doom) then
                 if (player.inventory[4154] and player.inventory[4154].count > 0) then
