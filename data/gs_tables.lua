@@ -274,6 +274,8 @@ stances = T{
     [7]={name="Afflatus Solace", cmd="/ja \"Afflatus Solace\" <me>"},
     [8]={name="Majesty", cmd="/ja \"Majesty\" <me>"},
     --[9]={name="Reprisal", cmd="/ma \"Reprisal\" <me>"},
+    [10]={name="Light Arts", cmd="/ja \"Light Arts\" <me>"},
+    [11]={name="Dark Arts", cmd="/ja \"Dark Arts\" <me>"},    
 }
 
 ----[[[[ Enmity Generators ]]]]----
