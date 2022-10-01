@@ -53,6 +53,8 @@ pet_action = false
 pet_action_start_time = 0
 pet_action_max_time = 2
 
+mid_song = false
+
 no_prerender = true
 
 -- Newly added variables that might be missing in modes object, but hopefully aren't
@@ -358,17 +360,22 @@ function precast(spell)
     local short_spell_2 = spell.english:split(" ")[2] or "N/A"
     local short_skill = (spell.skill ~= nil and spell.skill:split(" ")[1] or "N/A")
     
+    if (mid_song and short_skill ~= "Singing") then
+        return
+    end
+
     if short_skill and short_skill == "Singing" then
+        mid_song = true
         short_spell = spell.english:split(" ")[2]
     elseif short_skill and short_skill == "Geomancy" then
         short_spell = spell.english:split("-")[1]
     elseif short_skill and short_skill == "Ninjutsu" then
         short_spell = spell.english:split(":")[1]
     end
-
     if (modes.verbose.active) then
         windower.add_to_chat(207, "---- Precast\n Spell: "..tostring(short_spell).." Type: "..tostring(spell.type).." Skill: "..tostring(short_skill).." Ele: "..tostring(short_element))
     end
+    
     
     if (short_spell == "Cure" and adjust_cure(spell)) then 
         cancel_spell()
@@ -611,7 +618,6 @@ function midcast(spell)
         return
     end
 
-    player_action = true
     local set = T{}
 
     local short_element = (spell.element ~= nil and spell.element:split(" ")[1] or "N/A")
@@ -631,6 +637,10 @@ function midcast(spell)
         short_spell = spell.english:split("-")[1]
     elseif short_skill and short_skill == "Ninjutsu" then
         short_spell = spell.english:split(":")[1]
+    end
+
+    if (mid_song and short_skill ~= "Singing") then
+        return
     end
 
     if (spell == "Utsusemi: Ichi" or spell == "Utsusemi: Ni") then
@@ -893,6 +903,12 @@ end
 
 ----[[[[ Aftercast ]]]]----
 function aftercast(spell)
+    local short_skill = (spell.skill ~= nil and spell.skill:split(" ")[1] or "N/A")
+    if (mid_song and short_skill ~= "Singing") then
+        return
+    end
+    mid_song = false
+    
     set = {}
     -- Disable TH WS gear
     if (th_ws) then
