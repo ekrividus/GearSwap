@@ -1038,13 +1038,20 @@ end
 windower.raw_register_event('prerender', function(...)
     --update_gui()
     local time = os.clock()
-    if (just_zoned) then return end
     if (time < last_update + update_freq) then return end
+    if (just_zoned) then 
+        maneuvers:clear()
+        maneuvers_to_apply:clear()
+        just_zoned = false
+        return
+    end
     last_update = time
 
     -- Auto engage pets if they're not doing anything while we're engaged
-    if (pet_engage_commands:contains(player.main_job) and modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
-        send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
+    if (modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
+        if (pet_engage_commands[player.main_job]) then
+            send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
+        end
     end
 
     -- If we had a stance set and it has worn off lets get it back up
@@ -1159,6 +1166,7 @@ windower.raw_register_event('zone change', function()
     -- Clear stances and such 
     maneuvers:clear()
     maneuvers_to_apply:clear()
+
     modes.stance = {}
 
     last_maneuver_check_time = os.clock() + 60

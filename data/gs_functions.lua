@@ -550,7 +550,7 @@ end
 ----[[[[ Maneuver Maintenance ]]]]----
 function maneuver_maintenance()
     if (not is_disabled()) then
-        if (buffactive['Overload']) then
+        if (buffactive['Amnesia']) then
             return
         end
 
