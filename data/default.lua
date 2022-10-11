@@ -1048,7 +1048,7 @@ windower.raw_register_event('prerender', function(...)
     last_update = time
 
     -- Auto engage pets if they're not doing anything while we're engaged
-    if (modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
+    if (player and pet and modes.pet.auto_engage and player.status == "Engaged" and player.status_id <= 1 and pet.isvalid and pet.status ~= "Engaged") then
         if (pet_engage_commands[player.main_job]) then
             send_command('input /pet "'..pet_engage_commands[player.main_job]..'" <t>')
         end
