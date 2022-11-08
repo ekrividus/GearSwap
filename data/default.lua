@@ -89,6 +89,11 @@ function gear_up(spell)
 
     -- Default to Idle gear based on selected type, this will be overriden when engaged
     local set = T(set_combine(set, sets.Player.Idle, sets.Player.Idle[modes.idle.type], sets.Current))
+    -- Merge in basic current status gear
+    if (player.status ~= "Idle") then
+        set = set_combine(set, sets.Player[player.status])
+    end
+
     -- We're in Town lets put on something fun
     if (in_town()) then
         sets_list = sets_list..(' ***Town*** ')
