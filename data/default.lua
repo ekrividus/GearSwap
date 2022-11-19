@@ -89,10 +89,6 @@ function gear_up(spell)
 
     -- Default to Idle gear based on selected type, this will be overriden when engaged
     local set = T(set_combine(set, sets.Player.Idle, sets.Player.Idle[modes.idle.type], sets.Current))
-    -- Merge in basic current status gear
-    if (player.status ~= "Idle") then
-        set = set_combine(set, sets.Player[player.status])
-    end
 
     -- We're in Town lets put on something fun
     if (in_town()) then
@@ -119,6 +115,14 @@ function gear_up(spell)
         end
     end
 
+-- Merge in basic current status gear
+    if (player.status ~= "Idle") then
+        sets_list = sets_list.." "..player.status.." "
+        if (modes.verbose.active) then
+            windower.add_to_chat(207, player.status.." set? "..(sets.Player[player.status] and "Yes" or "No"))
+        end
+        set = set_combine(set, sets.Player[player.status])
+    end
 -- Merge player set by player state
     if (player.status == 'Engaged') then
         sets_list = sets_list..('Player-'..tostring(melee_set_names[modes.melee.type])..' ')
@@ -144,8 +148,6 @@ function gear_up(spell)
                 set = set_combine(set, sets.Dw[dw_needed])
             end
         end
-    else
-        sets_list = sets_list..('Player-Idle ')
     end
 
 -- Merge pet set by pet state and priority
@@ -260,7 +262,7 @@ end
         windower.add_to_chat(207, sets_list)
     end
 
-    if (player.status_id < 2) then
+    if (not T{"Dead", "Charmed"}:contains(player.status)) then
         equip(set)
     end
     return set
