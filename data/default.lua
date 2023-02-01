@@ -712,6 +712,14 @@ function midcast(spell)
             set = set_combine(set, sets.Blue.Diffusion)
             blue_set = blue_set..'-Diffusion'
         end
+        if (buffactive['Burst Affinity']) then
+            set = set_combine(set, sets.Blue.Burst)
+            blue_set = blue_set..'-Diffusion'
+        end
+        if (buffactive['Chain Affinity']) then
+            set = set_combine(set, sets.Blue.Chain)
+            blue_set = blue_set..'-Diffusion'
+        end
         if (modes.verbose.active == true) then
             windower.add_to_chat(207, "Blue Set Engaged: "..blue_set)
         end
