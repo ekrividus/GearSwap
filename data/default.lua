@@ -537,6 +537,15 @@ function precast(spell)
                 end
             end
         end
+
+        -- Check for WS sets with specialized buff active gear
+        if sets.WS[spell.english] then
+            for k,v in pairs (sets.WS[spell.english]) do
+                if (buffactive[k]) then
+                    set = set_combine(sets.WS[spell.english][k])
+                end
+            end
+        end
         
         -- SATA gear after everything else except enmity adjusters
         if (buffactive["Trick Attack"]) then 
@@ -674,6 +683,7 @@ function midcast(spell)
             set = set_combine(set, sets[short_type].Self)
         end
     end
+
     if sets[spell.type] then 
         set = set_combine(set, sets[spell.type])
         if (modes.verbose.active) then
@@ -767,6 +777,20 @@ function midcast(spell)
     
     if (spell.name:split("-")[1] == "Absorb" and sets.Dark) then
         set = set_combine(set, sets.Dark.Absorb)
+    end
+
+    -- Scholar Buff Changes:
+    if (short_skill == "Enhancing" and buffactive['Perpetuance'] and sets.Enhancing) then
+        if (modes.verbose.active) then
+            windower.add_to_chat(207, "Scholar: Perpetuance - ON")
+        end
+    set = set_combine(set, sets.Enhancing.Perpetuance)
+    end
+    if (short_skill == "Healing" and buffactive['Rapture'] and sets.Healing) then
+        if (modes.verbose.active) then
+            windower.add_to_chat(207, "Scholar: Rapture - ON")
+        end
+    set = set_combine(set, sets.Healing.Rapture)
     end
 
     if (dummy_songs and dummy_songs:contains(spell.name) and sets.FC and sets.FC.Singing) then 
